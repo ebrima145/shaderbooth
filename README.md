@@ -1,9 +1,9 @@
-# Camera Player (web)
+# Shaderbooth
 
 Your camera, in a browser, through up to **six stacked real-time GLSL
 effects**, in Windows-XP "Luna" chrome.
 
-**[Try it →](https://ebrima145.github.io/camera-player-web/)**
+**[Try it →](https://ebrima145.github.io/shaderbooth/)**
 
 Every effect runs on the GPU as a fragment shader in WebGL 2, so filters,
 analog degradation, feedback and generative fields all hold 60fps at 720p and
@@ -67,7 +67,7 @@ JavaScript modules and all thirty-six shaders — into one self-contained
 node build.mjs
 ```
 
-It writes `dist/camera-player.html` (about 150 KB). It still has to be
+It writes `dist/shaderbooth.html` (about 160 KB). It still has to be
 *served*, for the reason above — a single file is easier to move around, not a
 way out of needing HTTPS.
 

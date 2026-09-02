@@ -1,4 +1,4 @@
-# Camera Player (web) — the long version
+# Shaderbooth — the long version
 
 The short version is [README.md](README.md): what it is, how to run it, how to
 host it, the keys, and the handful of gotchas that otherwise cost an evening.
@@ -247,7 +247,7 @@ A stack is a short list of names and numbers, which makes it small enough to
 live in the URL — and that is the whole trick for sharing one.
 
 ```
-https://example.com/camera-player/#VHS:0.70,Halftone:0.85&m=1
+https://example.com/shaderbooth/#VHS:0.70,Halftone:0.85&m=1
 ```
 
 opens the page with VHS at 0.70 under Halftone at 0.85, mirrored. The hash is
@@ -383,7 +383,7 @@ where ES demands `1.0`. Writing for ES first gets you both.
 | `shaders/_common.glsl` | The preamble every effect is compiled against |
 | `shaders/_quad.vert` | The fullscreen triangle strip, in clip space |
 | `shaders/*.frag` | One per effect |
-| `build.mjs` | Folds everything into `dist/camera-player.html` |
+| `build.mjs` | Folds everything into `dist/shaderbooth.html` |
 | `serve.mjs` | A local static server for developing against |
 
 `chain.js` and `effects.js` are close ports of the desktop `chain.py` and

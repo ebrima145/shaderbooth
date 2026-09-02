@@ -58,7 +58,7 @@ const dom = {
   helpClose: el("help-close"),
 };
 
-const STORE_KEY = "camera-player";
+const STORE_KEY = "shaderbooth";
 
 const app = {
   library: null,

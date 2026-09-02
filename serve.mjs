@@ -77,7 +77,7 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Camera Player  ->  http://localhost:${PORT}`);
+  console.log(`Shaderbooth  ->  http://localhost:${PORT}`);
 
   const lan = Object.values(networkInterfaces()).flat()
     .filter((n) => n && n.family === "IPv4" && !n.internal)

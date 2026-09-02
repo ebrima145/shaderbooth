@@ -37,7 +37,7 @@
  * to be served, even locally. Nothing about bundling changes that - see the
  * README.
  *
- * Usage:  node build.mjs  [-o dist/camera-player.html]
+ * Usage:  node build.mjs  [-o dist/shaderbooth.html]
  */
 
 import { readFile, writeFile, readdir, mkdir, stat } from "node:fs/promises";
@@ -112,7 +112,7 @@ function fail(message) {
 async function main() {
   const argv = process.argv.slice(2);
   const at = argv.findIndex((a) => a === "-o" || a === "--output");
-  const target = at >= 0 ? argv[at + 1] : "dist/camera-player.html";
+  const target = at >= 0 ? argv[at + 1] : "dist/shaderbooth.html";
   if (at >= 0 && !target) fail("-o needs a path");
 
   let html = await readText(ROOT, "index.html");
