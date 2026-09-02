@@ -1,0 +1,501 @@
+/*
+ * style.css
+ *
+ * The Windows-XP "Luna" chrome, in CSS.
+ *
+ * The palettes are the same stop lists the desktop player draws its gradients
+ * from (xp_style.py), transcribed as gradient stops. Two things are what make
+ * XP chrome read as XP, and both are easy to lose: the caption gradient is a
+ * *multi-stop* curve rather than a straight two-colour ramp - it brightens
+ * sharply near the top, dips, then lifts again before the dark bottom edge -
+ * and everything is bevelled, with grooves dark on the top/left and light on
+ * the bottom/right, and raised faces the reverse.
+ */
+
+:root {
+  --luna-edge: #003ec9;
+  --bar-text: #10203c;
+  --face: #ece9d8;          /* the XP dialog grey */
+  --groove-dark: #7f9db9;
+  --groove-light: #ffffff;
+  --stage: #14141a;
+
+  /* XP Luna active caption, sampled top -> bottom. */
+  --caption: linear-gradient(180deg,
+      #0058ee 0%, #3593ff 4%, #288eff 6%, #127dff 8%, #036ffc 10%,
+      #0262ee 14%, #0057e5 20%, #0054e3 24%, #0055eb 56%, #005bf5 81%,
+      #003dd7 94%, #003dd7 100%);
+
+  /* Media-player control bar: glossy blue with the highlight break at the waist. */
+  --wmp-bar: linear-gradient(180deg,
+      #ecf3fd 0%, #c8ddfa 5%, #8eb3ef 46%, #6893e2 50%, #527fd5 75%, #3964be 100%);
+
+  /* Round button face - bright top, darker waist, light bounce off the bottom. */
+  --button-face: linear-gradient(180deg,
+      #fdfeff 0%, #d8e7fb 44%, #acc7f0 50%, #c4daf7 78%, #e8f2fd 100%);
+  --button-hot: linear-gradient(180deg,
+      #ffffff 0%, #eaf4ff 44%, #c9e0ff 50%, #dceeff 78%, #f4faff 100%);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: #5a7edc;
+  font: 11px Tahoma, "Segoe UI", Verdana, sans-serif;
+  color: var(--bar-text);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  /* The XP desktop, more or less: Bliss without the photograph. */
+  background:
+    radial-gradient(120% 80% at 50% 100%, #6ba43a 0%, #3f7a22 40%, transparent 41%),
+    linear-gradient(180deg, #1d4fa0 0%, #3f86dd 45%, #86bff0 70%, #cfe6f7 100%);
+}
+
+/* --- the window ---------------------------------------------------------- */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, 100%);
+  height: min(760px, 100%);
+  border: 1px solid var(--luna-edge);
+  border-radius: 8px 8px 3px 3px;
+  background: var(--face);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+/* --- title bar ----------------------------------------------------------- */
+
+#titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px 0 6px;
+  background: var(--caption);
+  border-bottom: 1px solid #0a246a;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.55);
+  user-select: none;
+  flex: none;
+}
+
+#title-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: radial-gradient(circle at 50% 50%, #eaf2ff 0 34%, #0054e3 36% 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+#title-text { font-size: 12px; }
+
+#title-status {
+  margin-left: auto;
+  font-weight: normal;
+  font-size: 10px;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#title-buttons { display: flex; gap: 2px; }
+
+.cap {
+  width: 21px;
+  height: 21px;
+  border: 1px solid #fff;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4d90ff 0%, #1a6ae8 50%, #0b4fc2 100%);
+  color: #fff;
+  font: bold 11px Tahoma, sans-serif;
+  cursor: pointer;
+  line-height: 1;
+}
+.cap:hover { background: linear-gradient(180deg, #79b0ff 0%, #3d86f5 50%, #1a5fd0 100%); }
+.cap:active { background: linear-gradient(180deg, #0b4fc2 0%, #1a6ae8 50%, #4d90ff 100%); }
+
+/* --- the picture --------------------------------------------------------- */
+
+#stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--stage);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* "Contain" scaling: one scale factor for both axes, so the picture is never
+   stretched or cropped - leftover space letterboxes to the stage background. */
+#output {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* The camera itself is never shown; it exists only to be uploaded as a
+   texture. display:none would stop some browsers decoding it at all, so it is
+   hidden by being one transparent pixel out of the way instead. */
+#feed {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: #cfd6e6;
+  font-size: 12px;
+  line-height: 1.6;
+  background: rgba(10, 10, 14, 0.82);
+}
+#message span { max-width: 46ch; white-space: pre-line; }
+#message[hidden] { display: none; }
+#message.error { color: #ffd7d7; }
+
+/* --- control bar --------------------------------------------------------- */
+
+#controlbar {
+  flex: none;
+  background: var(--wmp-bar);
+  border-top: 1px solid #f3f7fe;
+  box-shadow: inset 0 -1px 0 #2f549e;
+  padding: 6px 8px 8px;
+  user-select: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.row.selects { margin-top: 7px; gap: 10px; }
+
+.divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: linear-gradient(180deg, transparent, #2f549e, transparent);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.45);
+}
+
+/* --- round transport buttons --------------------------------------------- */
+
+.round {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 1px solid #35538f;
+  border-radius: 50%;
+  background: var(--button-face);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  color: #1b3a6b;
+  font: 12px Tahoma, sans-serif;
+}
+.round.big { width: 34px; height: 34px; }
+.round:hover { background: var(--button-hot); }
+.round:active { box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35); }
+.round:disabled { opacity: 0.45; cursor: default; }
+.round.on {
+  background: linear-gradient(180deg, #cfe9ff 0%, #8fc2f4 50%, #6aa8e8 100%);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* The glyphs are drawn rather than typed: a triangle and two bars set in a
+   font are at the mercy of whatever the browser substitutes, and at 26px the
+   difference between a centred play arrow and an off-centre one is obvious. */
+.round::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+#btn-play::before {
+  width: 0; height: 0;
+  border-left: 11px solid #1b3a6b;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  transform: translateX(2px);
+}
+#btn-play.playing::before {
+  width: 10px; height: 12px;
+  border: none;
+  transform: none;
+  background: linear-gradient(90deg, #1b3a6b 0 38%, transparent 38% 62%, #1b3a6b 62% 100%);
+}
+
+#btn-prev::before, #btn-next::before {
+  width: 0; height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+#btn-prev::before { border-right: 8px solid #1b3a6b; transform: translateX(-1px); }
+#btn-next::before { border-left: 8px solid #1b3a6b; transform: translateX(1px); }
+
+#btn-mirror::before {
+  width: 13px; height: 13px;
+  background: linear-gradient(90deg, #1b3a6b 0 44%, transparent 44% 56%, #6d8bb8 56% 100%);
+  clip-path: polygon(0 12%, 44% 0, 44% 100%, 0 88%, 0 12%,
+                     56% 0, 100% 12%, 100% 88%, 56% 100%);
+}
+
+#btn-rec::before {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8f8f, #d40000 70%);
+}
+#btn-rec.on { animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 3px rgba(224, 0, 0, 0.45); } }
+
+#btn-snap::before {
+  width: 15px; height: 11px;
+  border: 2px solid #1b3a6b;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 50% 55%, #1b3a6b 0 2.5px, transparent 2.6px);
+}
+
+/* --- readout and stack chips --------------------------------------------- */
+
+#readout {
+  min-width: 8.5em;
+  padding: 3px 7px;
+  margin-left: 4px;
+  border: 1px solid #2f549e;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #0d1c33, #16294a);
+  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.6);
+  color: #9ad2ff;
+  font: 10px "Lucida Console", Consolas, monospace;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.stack {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+#chips { display: flex; gap: 3px; margin-right: 4px; }
+
+.chip {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #35538f;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fdfeff, #cfe0f7 50%, #eaf2fd);
+  color: #1b3a6b;
+  font: bold 10px Tahoma, sans-serif;
+  cursor: pointer;
+  padding: 0;
+}
+.chip.active {
+  background: var(--wmp-bar);
+  border-color: #16305e;
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+.chip.busy::after {
+  /* A layer holding something other than the pass-through gets a dot, so the
+     stack reads at a glance without hovering every chip. */
+  content: "";
+  display: block;
+  width: 3px; height: 3px;
+  margin: 1px auto 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.tiny {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #35538f;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fdfeff, #d8e7fb 50%, #eaf2fd);
+  box-shadow: inset 0 1px 0 #fff;
+  color: #1b3a6b;
+  font: bold 11px Tahoma, sans-serif;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+.tiny:hover { background: var(--button-hot); }
+.tiny:disabled { opacity: 0.4; cursor: default; }
+
+/* --- fields -------------------------------------------------------------- */
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #f2f7ff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
+  flex: 1 1 190px;
+  min-width: 0;
+}
+.field.narrow { flex: 0 1 150px; }
+.field.slider { flex: 1 1 210px; }
+.field > span { flex: none; }
+
+select {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 21px;
+  padding: 1px 3px;
+  border: 1px solid var(--groove-dark);
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.12);
+  font: 11px Tahoma, "Segoe UI", sans-serif;
+  color: #10203c;
+}
+select:focus { outline: 1px dotted #0a246a; outline-offset: 1px; }
+option:disabled { color: #999; }
+
+/* The trackbar: a recessed groove with a raised thumb, the XP way round. */
+input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 18px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 5px;
+  border: 1px solid var(--groove-dark);
+  border-bottom-color: var(--groove-light);
+  border-right-color: var(--groove-light);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #b6c6dc, #e6eefa);
+}
+input[type="range"]::-moz-range-track {
+  height: 5px;
+  border: 1px solid var(--groove-dark);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #b6c6dc, #e6eefa);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 17px;
+  margin-top: -7px;
+  border: 1px solid #35538f;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #fdfeff, #d8e7fb 50%, #b9d2f2);
+  box-shadow: inset 0 1px 0 #fff;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 17px;
+  border: 1px solid #35538f;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #fdfeff, #d8e7fb 50%, #b9d2f2);
+}
+
+#amount-value {
+  flex: none;
+  width: 3em;
+  text-align: right;
+  font: 10px "Lucida Console", Consolas, monospace;
+  color: #f2f7ff;
+}
+
+/* --- help ---------------------------------------------------------------- */
+
+#help {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 10;
+}
+#help[hidden] { display: none; }
+
+#help .panel {
+  width: min(430px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  padding: 16px 18px;
+  border: 1px solid var(--luna-edge);
+  border-radius: 6px;
+  background: var(--face);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+  line-height: 1.55;
+}
+#help h2 { margin: 0 0 8px; font-size: 14px; }
+#help p { margin: 0 0 10px; }
+#help table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
+#help td { padding: 2px 6px; vertical-align: top; }
+#help td:first-child {
+  white-space: nowrap;
+  font-weight: bold;
+  color: #1b3a6b;
+  width: 8.5em;
+}
+#help tr:nth-child(odd) { background: rgba(255, 255, 255, 0.55); }
+#help .fine { color: #444; }
+#help button {
+  padding: 4px 16px;
+  border: 1px solid var(--groove-dark);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fdfeff, #e3e0d2 50%, #f4f2e9);
+  font: 11px Tahoma, sans-serif;
+  cursor: pointer;
+}
+
+/* --- fullscreen ---------------------------------------------------------- */
+
+/* In fullscreen the window chrome is the whole screen, so the rounded corners
+   and the drop shadow are just a seam against the monitor's edge. */
+#app:fullscreen {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* --- small screens ------------------------------------------------------- */
+
+@media (max-width: 620px) {
+  body { padding: 0; }
+  #app { width: 100%; height: 100%; border-radius: 0; border: none; }
+  .field { flex: 1 1 100%; }
+  #readout { min-width: 0; flex: 1 1 auto; }
+  .stack { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+}

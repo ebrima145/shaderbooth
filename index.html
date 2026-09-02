@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Camera Player</title>
+<meta name="description" content="A webcam viewer with 34 stackable real-time GLSL effects, in the browser.">
+<meta name="theme-color" content="#0054e3">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230054e3'/><circle cx='8' cy='8' r='3.4' fill='%23eaf2ff'/><circle cx='8' cy='8' r='1.6' fill='%230054e3'/></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <div id="titlebar">
+    <span id="title-icon" aria-hidden="true"></span>
+    <span id="title-text">Camera Player</span>
+    <span id="title-status">starting&hellip;</span>
+    <span id="title-buttons">
+      <button id="btn-help" class="cap" title="Keys and about">?</button>
+      <button id="btn-full" class="cap" title="Fullscreen (F)">&#9744;</button>
+    </span>
+  </div>
+
+  <div id="stage">
+    <canvas id="output" width="1280" height="720"></canvas>
+    <div id="message"><span></span></div>
+    <video id="feed" playsinline muted autoplay></video>
+  </div>
+
+  <div id="controlbar">
+
+    <div class="row transport">
+      <button id="btn-play" class="round big" title="Start / stop the camera (Space)"></button>
+      <button id="btn-prev" class="round" title="Previous camera (Ctrl + Left)"></button>
+      <button id="btn-next" class="round" title="Next camera (Tab)"></button>
+      <button id="btn-mirror" class="round" title="Mirror horizontally (M)"></button>
+
+      <span class="divider"></span>
+
+      <button id="btn-rec" class="round rec" title="Record the output (R)"></button>
+      <button id="btn-snap" class="round" title="Save a still (S)"></button>
+
+      <span id="readout">&ndash;</span>
+
+      <span class="stack">
+        <span id="chips"></span>
+        <button id="btn-add" class="tiny" title="Add a layer above this one (A)">+</button>
+        <button id="btn-del" class="tiny" title="Delete this layer (D)">&minus;</button>
+        <button id="btn-down" class="tiny" title="Move this layer down (,)">&#9664;</button>
+        <button id="btn-up" class="tiny" title="Move this layer up (.)">&#9654;</button>
+      </span>
+    </div>
+
+    <div class="row selects">
+      <label class="field">
+        <span>Camera</span>
+        <select id="device" title="Which camera to show"></select>
+      </label>
+      <label class="field narrow">
+        <span>Size</span>
+        <select id="resolution" title="Resolution to ask the camera for"></select>
+      </label>
+      <label class="field">
+        <span>Effect</span>
+        <select id="effect" title="What to put the picture through, in the active layer ([ / ])"></select>
+      </label>
+      <label class="field slider">
+        <span>Amount</span>
+        <input id="amount" type="range" min="0" max="100" value="100"
+               title="Intensity of the active layer (- / + , 0 to reset)">
+        <output id="amount-value">1.00</output>
+      </label>
+    </div>
+
+  </div>
+</div>
+
+<div id="help" hidden>
+  <div class="panel">
+    <h2>Camera Player</h2>
+    <p>Your camera, through up to six stacked GLSL effects, on the GPU. Nothing
+       leaves this page &mdash; the video never goes to a server, and the
+       recordings are written by your own browser.</p>
+    <table>
+      <tr><td>Space</td><td>Start / stop the camera</td></tr>
+      <tr><td>Tab</td><td>Next camera</td></tr>
+      <tr><td>Ctrl + &larr; / &rarr;</td><td>Previous / next camera</td></tr>
+      <tr><td>[ / ]</td><td>Previous / next effect, in the active layer</td></tr>
+      <tr><td>&minus; / +</td><td>Effect intensity, in the active layer</td></tr>
+      <tr><td>0</td><td>Reset intensity to the effect's default</td></tr>
+      <tr><td>1 &ndash; 6</td><td>Edit that layer of the stack</td></tr>
+      <tr><td>A / D</td><td>Add a layer above the active one / delete it</td></tr>
+      <tr><td>, / .</td><td>Move the active layer down / up the stack</td></tr>
+      <tr><td>M</td><td>Mirror horizontally</td></tr>
+      <tr><td>R</td><td>Start / stop recording the output</td></tr>
+      <tr><td>S</td><td>Save a still of the output</td></tr>
+      <tr><td>F</td><td>Fullscreen</td></tr>
+      <tr><td>Esc</td><td>Close this, or leave fullscreen</td></tr>
+    </table>
+    <p class="fine">Stacking is the point: Halftone over Edge Glow prints the
+       edges as dots, Edge Glow over Halftone finds the outline of the dots.
+       The numbered chips are the stack, bottom layer first.</p>
+    <button id="help-close">Close</button>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
