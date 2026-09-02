@@ -1,9 +1,9 @@
 # Camera Player (web)
 
 Your camera, in a browser, through up to **six stacked real-time GLSL
-effects** — the same thirty-four effects and the same Windows-XP "Luna" chrome
-as the desktop [Universal Player](../Universal%20Player), with the file and
-Spout sources taken out and nothing left but the camera.
+effects**, in Windows-XP "Luna" chrome.
+
+**[Try it →](https://ebrima145.github.io/camera-player-web/)**
 
 Every effect runs on the GPU as a fragment shader in WebGL 2, so filters,
 analog degradation, feedback and generative fields all hold 60fps at 720p and
@@ -166,11 +166,12 @@ saves a still.
 | `build.mjs` | Folds the lot into one distributable HTML file |
 | `serve.mjs` | A local static server, so the page has a `localhost` origin |
 
-## Relationship to the desktop players
+## Adding an effect
 
-The effect files in `shaders/` are byte-for-byte the ones in [Universal
-Player](../Universal%20Player). Only the shared preamble differs — it is the
-GLSL ES 3.00 twin of the desktop's `#version 330 core` one, deliberately kept
-line-for-line equivalent below the header so an effect written for either
-compiles unchanged on the other. Write an effect here, drop it in there, and
-it works. See [MANUAL.md](MANUAL.md#writing-your-own-effect).
+Two steps: write `shaders/yours.frag` — just the `main()`, since the shared
+preamble in `shaders/_common.glsl` declares the uniforms and the helper
+vocabulary — then add one line to `CATALOGUE` in `js/effects.js`. Reload. If it
+doesn't compile, the console says so with line numbers relative to your own
+file, and the effect stays in the menu greyed out rather than vanishing.
+
+[MANUAL.md](MANUAL.md#writing-your-own-effect) has the full vocabulary.
