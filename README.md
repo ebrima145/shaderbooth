@@ -1,9 +1,10 @@
 # Camera Player (web)
 
 Your camera, in a browser, through up to **six stacked real-time GLSL
-effects** — the same thirty-four effects and the same Windows-XP "Luna" chrome
-as the desktop [Universal Player](../Universal%20Player), with the file and
-Spout sources taken out and nothing left but the camera.
+effects** — the same thirty-four effects as the desktop
+[Universal Player](../Universal%20Player), with the file and Spout sources
+taken out and nothing left but the camera, in a dark instrument-panel UI built
+for looking at a lit picture.
 
 Every effect runs on the GPU as a fragment shader in WebGL 2, so filters,
 analog degradation, feedback and generative fields all hold 60fps at 720p and
@@ -71,9 +72,11 @@ to gets the look, not a screen recording and an explanation.
 ## Using it
 
 Pick a camera from the left drop-down and an effect from the right one. The
-numbered chips are the stack, bottom layer first — click one to point the
-effect box and the Amount slider at that layer. `+` adds a layer above the
-active one, `−` deletes it, `◀` `▶` move it down and up the stack.
+**chain** on the right of the transport row is the stack, running left to
+right: each node shows its position and what is in it, and a layer still
+holding the pass-through is drawn hollow. Click a node to point the effect box
+and the Amount slider at that layer. `+` adds a layer after the active one,
+`−` deletes it, `‹` `›` move it earlier and later in the chain.
 
 Intensity means something different in each effect. It is wired to whatever
 knob actually matters for that one, not to a blend against the original: it is
@@ -93,9 +96,9 @@ saves a still.
 | `[` / `]` | Previous / next effect, in the active layer |
 | `-` / `+` | Effect intensity, in the active layer |
 | `0` | Reset intensity to the effect's default |
-| `1`–`6` | Edit that layer of the stack |
-| `A` / `D` | Add a layer above the active one / delete it |
-| `,` / `.` | Move the active layer down / up the stack |
+| `1`–`6` | Edit that layer of the chain |
+| `A` / `D` | Add a layer after the active one / delete it |
+| `,` / `.` | Move the active layer earlier / later in the chain |
 | `M` | Mirror horizontally |
 | `R` | Start / stop recording the output |
 | `S` | Save a still of the output |
@@ -140,7 +143,7 @@ saves a still.
 | File | What it is |
 | --- | --- |
 | `index.html` | The window: title bar, stage, control bar, help panel |
-| `css/style.css` | The Luna chrome, as gradients and bevels |
+| `css/style.css` | The instrument panel: palette, lamps, the chain rail |
 | `js/main.js` | Owns the camera, the chain, the renderer and the input |
 | `js/effects.js` | The catalogue and the GLSL compiler |
 | `js/chain.js` | The stack of layers and the editing rules |

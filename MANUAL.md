@@ -96,7 +96,7 @@ nothing in it that can block.
 
 ## The control bar
 
-Two rows, in the glossy Windows-Media-Player blue.
+Two rows on a cool graphite panel, below a stage that is darker than both.
 
 The top row is transport and stack. Play starts and stops the camera —
 stopping it genuinely releases the device, so the browser's camera indicator
@@ -108,12 +108,11 @@ using the app.
 Then record, snapshot, and the readout — resolution and frame rate normally, a
 running clock while recording, and a short confirmation when a file is saved.
 
-On the right, the stack: numbered chips, bottom layer first. A chip carries a
-dot when its layer holds something other than the pass-through, so the shape of
-a stack reads without hovering every chip. `+` inserts a layer *above* the
-active one — the active layer is what you were just looking at, so that is
-where the next one belongs — `−` deletes it, and the two arrows move it
-through the stack.
+On the right, the chain: connected nodes running left to right, each showing
+its position and the effect in it, with a layer still holding the pass-through
+drawn hollow. `+` inserts a layer *after* the active one — the active layer is
+what you were just looking at, so that is where the next one belongs — `−`
+deletes it, and the two chevrons move it through the chain.
 
 The bottom row is the four selectors: camera, size, effect, amount.
 
@@ -190,8 +189,8 @@ see [How a frame gets to the screen](#how-a-frame-gets-to-the-screen).
 ## Stacking effects
 
 A layer is one full pass over the whole frame: it reads what the layer below
-it produced and writes what the layer above it will read. The stack runs
-bottom-to-top, from chip `1` on the left.
+it produced and writes what the layer above it will read. The chain runs left
+to right, from node `1`.
 
 Order is not a detail — it is most of the expressive range. Halftone over Edge
 Glow prints the edges as dots; Edge Glow over Halftone finds the outline of
@@ -369,7 +368,7 @@ where ES demands `1.0`. Writing for ES first gets you both.
 | File | What it does |
 | --- | --- |
 | `index.html` | The window: title bar, stage, control bar, help panel |
-| `css/style.css` | The Luna chrome, transcribed from the desktop palettes |
+| `css/style.css` | The instrument panel: palette, lamps, the chain rail |
 | `js/main.js` | Entry point: owns the camera, the chain, the renderer and the input, and the only file that touches the DOM |
 | `js/effects.js` | The catalogue, the GLSL compiler, the shader loader |
 | `js/chain.js` | The stack of layers and the rules for editing it |
@@ -529,18 +528,44 @@ the interface rather than only in a README, because "a website that wants my
 camera" is a reasonable thing to be suspicious of and the suspicion is
 answerable.
 
-**The XP chrome is not a joke about the desktop version.** It is the same
-window, so a look built in one reads the same in the other, and the two
-projects stay recognisably one thing. The palettes in `style.css` are the same
-stop lists `xp_style.py` draws its gradients from. What makes XP chrome read
-as XP is mostly the multi-stop caption curve — brightening sharply near the
-top, dipping, lifting again before the dark bottom edge — and the bevels being
-consistently the right way round.
+**The picture is the brightest thing on screen.** The chrome sits above the
+stage in luminance but well below the image. The whole content of this app is
+a lit photograph, and a bright panel beside it flares against it and wrecks
+your judgement of what the effects are actually doing — which is why every
+video tool from Resolve to OBS is dark, and it is not a matter of fashion.
 
-**The transport glyphs are drawn in CSS, not typed as characters.** A play
-triangle set in a font is at the mercy of whatever the browser substitutes,
-and at 26px the difference between a centred arrow and an off-centre one is
-obvious.
+**Off is dark; on illuminates.** No control gets a filled "selected"
+background. The active layer, the mirror toggle and the record button light up
+instead, like lamps on a rack unit — amber for state, red reserved exclusively
+for the tally. One indicator language rather than three, so the eye can find
+what is live in a single sweep. The tally spills onto the monitor bezel while
+a take is running, which is the one decorative move in the panel and earns its
+place by being what broadcast hardware actually does: readable from across the
+room, exactly when you are not looking at the readout.
+
+**The chain is drawn as a chain.** A stack of effects *is* a signal chain, and
+order carries more of the expressive range than any single effect does, so the
+layer strip shows connected nodes with their names rather than six numbered
+squares. The numbering is information rather than decoration — those are the
+`1`–`6` keys — and it removes a real annoyance in the earlier version, where
+you had to hover every chip to find out what was in it.
+
+**System typefaces, on purpose.** A webfont would put a network request on a
+page whose entire claim is that nothing leaves your device, and would break the
+single-file build that is meant to be emailable. The personality comes from the
+treatment instead: silkscreened micro-caps for panel labels against mono
+tabular figures for every readout, which is what an instrument panel looks
+like. Tabular figures are also functional — a changing number does not shuffle
+the characters either side of it.
+
+**The transport glyphs are inline SVG, not font characters.** A play triangle
+set in a font is at the mercy of whatever the browser substitutes, and at 34px
+the difference between a centred arrow and an off-centre one is obvious. Inline
+keeps them dependency-free and themeable through `currentColor`.
+
+**Panel labels are 10px, so they are held to 4.5:1.** A "tasteful" low-contrast
+grey stops being readable at that size; the label colour was raised
+specifically to clear AA rather than to look softer.
 
 **A broken shader is greyed out, not hidden.** Compilation is eager but
 forgiving; one typo costs you one effect rather than the app.

@@ -5,69 +5,135 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Camera Player</title>
 <meta name="description" content="A webcam viewer with 34 stackable real-time GLSL effects, in the browser.">
-<meta name="theme-color" content="#0054e3">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230054e3'/><circle cx='8' cy='8' r='3.4' fill='%23eaf2ff'/><circle cx='8' cy='8' r='1.6' fill='%230054e3'/></svg>">
+<meta name="theme-color" content="#0A0B0D">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3.5' fill='%2316181D'/><circle cx='8' cy='8' r='3.6' fill='none' stroke='%23FFB224' stroke-width='1.6'/><circle cx='8' cy='8' r='1.1' fill='%23FFB224'/></svg>">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <div id="app">
 
-  <div id="titlebar">
-    <span id="title-icon" aria-hidden="true"></span>
-    <span id="title-text">Camera Player</span>
-    <span id="title-status">starting&hellip;</span>
-    <span id="title-buttons">
-      <button id="btn-help" class="cap" title="Keys and about">?</button>
-      <button id="btn-full" class="cap" title="Fullscreen (F)">&#9744;</button>
+  <header id="titlebar">
+    <span id="wordmark">
+      <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/>
+        <circle cx="12" cy="12" r="2.25" fill="currentColor"/>
+      </svg>
+      <b>Camera&nbsp;Player</b>
     </span>
-  </div>
 
-  <div id="stage">
-    <canvas id="output" width="1280" height="720"></canvas>
-    <div id="message"><span></span></div>
+    <span id="signal">
+      <i id="lamp" aria-hidden="true"></i>
+      <span id="title-status">Camera off</span>
+    </span>
+
+    <span id="title-buttons">
+      <button id="btn-help" class="ghost" title="Keys and about" aria-label="Keys and about">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M9.6 9.6a2.5 2.5 0 1 1 3.1 2.4c-.6.2-.9.7-.9 1.3v.5"
+                fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="12" cy="16.7" r="1" fill="currentColor"/>
+        </svg>
+      </button>
+      <button id="btn-full" class="ghost" title="Fullscreen (F)" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4.5 9.5v-5h5M19.5 9.5v-5h-5M4.5 14.5v5h5M19.5 14.5v5h-5"
+                fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </span>
+  </header>
+
+  <main id="stage">
+    <div id="screen">
+      <canvas id="output" width="1280" height="720"></canvas>
+    </div>
+
+    <div id="message">
+      <div class="card">
+        <h1 id="msg-title">Start the camera</h1>
+        <p id="msg-body">Your video stays on this device. It is never uploaded,
+           and there is no server behind this page.</p>
+        <button id="btn-start" class="primary">Start the camera</button>
+        <p class="hint">or press <kbd>Space</kbd></p>
+      </div>
+    </div>
+
     <video id="feed" playsinline muted autoplay></video>
-  </div>
+  </main>
 
   <div id="controlbar">
 
     <div class="row transport">
-      <button id="btn-play" class="round big" title="Start / stop the camera (Space)"></button>
-      <button id="btn-prev" class="round" title="Previous camera (Ctrl + Left)"></button>
-      <button id="btn-next" class="round" title="Next camera (Tab)"></button>
-      <button id="btn-mirror" class="round" title="Mirror horizontally (M)"></button>
+      <button id="btn-play" class="key big" title="Start / stop the camera (Space)" aria-label="Start or stop the camera">
+        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.2v13.6L19 12z" fill="currentColor"/></svg>
+        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.5h2.6v13H8.5zM12.9 5.5h2.6v13h-2.6z" fill="currentColor"/></svg>
+      </button>
+
+      <button id="btn-prev" class="key" title="Previous camera (Ctrl + Left)" aria-label="Previous camera">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 5.6v12.8L8.8 12zM6.5 5.6h2v12.8h-2z" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-next" class="key" title="Next camera (Tab)" aria-label="Next camera">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 5.6v12.8L15.2 12zM15.5 5.6h2v12.8h-2z" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-mirror" class="key" title="Mirror horizontally (M)" aria-label="Mirror horizontally">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M10.2 7.4 4.8 12l5.4 4.6z" fill="currentColor"/>
+          <path d="M13.8 7.4 19.2 12l-5.4 4.6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M12 3.6v16.8" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="2 3"/>
+        </svg>
+      </button>
 
       <span class="divider"></span>
 
-      <button id="btn-rec" class="round rec" title="Record the output (R)"></button>
-      <button id="btn-snap" class="round" title="Save a still (S)"></button>
+      <button id="btn-rec" class="key tally" title="Record the output (R)" aria-label="Record the output">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5.6" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-snap" class="key" title="Save a still (S)" aria-label="Save a still">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4.2 8.4h3.3l1.4-2h6.2l1.4 2h3.3v9.8H4.2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          <circle cx="12" cy="13" r="2.9" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+      </button>
 
-      <span id="readout">&ndash;</span>
+      <output id="readout">No signal</output>
 
-      <span class="stack">
-        <span id="chips"></span>
-        <button id="btn-add" class="tiny" title="Add a layer above this one (A)">+</button>
-        <button id="btn-del" class="tiny" title="Delete this layer (D)">&minus;</button>
-        <button id="btn-down" class="tiny" title="Move this layer down (,)">&#9664;</button>
-        <button id="btn-up" class="tiny" title="Move this layer up (.)">&#9654;</button>
-      </span>
+      <div class="chain-group">
+        <span class="tag">Chain</span>
+        <div id="chain"></div>
+        <div class="stack-edit">
+          <button id="btn-add" class="key sm" title="Add a layer above this one (A)" aria-label="Add a layer">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+          <button id="btn-del" class="key sm" title="Delete this layer (D)" aria-label="Delete this layer">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+          <button id="btn-down" class="key sm" title="Move this layer earlier (,)" aria-label="Move this layer earlier">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6.5 8.5 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button id="btn-up" class="key sm" title="Move this layer later (.)" aria-label="Move this layer later">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6.5 15.5 12 10 17.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="row selects">
       <label class="field">
-        <span>Camera</span>
+        <span class="tag">Camera</span>
         <select id="device" title="Which camera to show"></select>
       </label>
       <label class="field narrow">
-        <span>Size</span>
+        <span class="tag">Size</span>
         <select id="resolution" title="Resolution to ask the camera for"></select>
       </label>
       <label class="field">
-        <span>Effect</span>
+        <span class="tag">Effect</span>
         <select id="effect" title="What to put the picture through, in the active layer ([ / ])"></select>
       </label>
       <label class="field slider">
-        <span>Amount</span>
+        <span class="tag">Amount</span>
         <input id="amount" type="range" min="0" max="100" value="100"
                title="Intensity of the active layer (- / + , 0 to reset)">
         <output id="amount-value">1.00</output>
@@ -78,11 +144,13 @@
 </div>
 
 <div id="help" hidden>
-  <div class="panel">
-    <h2>Camera Player</h2>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <h2 id="help-title">Camera Player</h2>
     <p>Your camera, through up to six stacked GLSL effects, on the GPU. Nothing
-       leaves this page &mdash; the video never goes to a server, and the
-       recordings are written by your own browser.</p>
+       leaves this page — the video never goes to a server, and the recordings
+       are written by your own browser.</p>
+
+    <h3>Keys</h3>
     <table>
       <tr><td>Space</td><td>Start / stop the camera</td></tr>
       <tr><td>Tab</td><td>Next camera</td></tr>
@@ -90,19 +158,21 @@
       <tr><td>[ / ]</td><td>Previous / next effect, in the active layer</td></tr>
       <tr><td>&minus; / +</td><td>Effect intensity, in the active layer</td></tr>
       <tr><td>0</td><td>Reset intensity to the effect's default</td></tr>
-      <tr><td>1 &ndash; 6</td><td>Edit that layer of the stack</td></tr>
-      <tr><td>A / D</td><td>Add a layer above the active one / delete it</td></tr>
-      <tr><td>, / .</td><td>Move the active layer down / up the stack</td></tr>
+      <tr><td>1 &ndash; 6</td><td>Edit that layer of the chain</td></tr>
+      <tr><td>A / D</td><td>Add a layer after the active one / delete it</td></tr>
+      <tr><td>, / .</td><td>Move the active layer earlier / later</td></tr>
       <tr><td>M</td><td>Mirror horizontally</td></tr>
       <tr><td>R</td><td>Start / stop recording the output</td></tr>
       <tr><td>S</td><td>Save a still of the output</td></tr>
       <tr><td>F</td><td>Fullscreen</td></tr>
       <tr><td>Esc</td><td>Close this, or leave fullscreen</td></tr>
     </table>
-    <p class="fine">Stacking is the point: Halftone over Edge Glow prints the
-       edges as dots, Edge Glow over Halftone finds the outline of the dots.
-       The numbered chips are the stack, bottom layer first.</p>
-    <button id="help-close">Close</button>
+
+    <p class="fine">The chain runs left to right, and order is most of the
+       range: Halftone after Edge Glow prints the edges as dots; Edge Glow
+       after Halftone finds the outline of the dots.</p>
+
+    <button id="help-close" class="primary">Close</button>
   </div>
 </div>
 

@@ -1,40 +1,62 @@
 /*
  * style.css
  *
- * The Windows-XP "Luna" chrome, in CSS.
+ * The instrument panel.
  *
- * The palettes are the same stop lists the desktop player draws its gradients
- * from (xp_style.py), transcribed as gradient stops. Two things are what make
- * XP chrome read as XP, and both are easy to lose: the caption gradient is a
- * *multi-stop* curve rather than a straight two-colour ramp - it brightens
- * sharply near the top, dips, then lifts again before the dark bottom edge -
- * and everything is bevelled, with grooves dark on the top/left and light on
- * the bottom/right, and raised faces the reverse.
+ * Two ideas hold this together, and everything below is downstream of them.
+ *
+ * **The picture is the brightest thing on screen.** The chrome sits above the
+ * stage in luminance but well below the image, because the whole content of
+ * this app is a lit photograph and any bright panel next to it flares against
+ * it and wrecks your judgement of what the effects are actually doing. Every
+ * video tool is dark for this reason and not for fashion.
+ *
+ * **Off is dark; on illuminates.** No control here gets a filled "selected"
+ * background. Active layers, the mirror toggle and the record button all light
+ * up instead, like lamps on a rack unit - amber for state, red reserved
+ * exclusively for the tally. That gives the panel one indicator language
+ * rather than three, and it means the eye can find what is live in one sweep.
+ *
+ * Type is system faces on purpose: a webfont would put a network request on a
+ * page whose entire claim is that nothing leaves your device, and would break
+ * the single-file build that is meant to be emailable. The personality comes
+ * from the treatment instead - silkscreened micro-caps for panel labels
+ * against mono tabular figures for every readout, which is what an instrument
+ * panel actually looks like.
  */
 
 :root {
-  --luna-edge: #003ec9;
-  --bar-text: #10203c;
-  --face: #ece9d8;          /* the XP dialog grey */
-  --groove-dark: #7f9db9;
-  --groove-light: #ffffff;
-  --stage: #14141a;
+  color-scheme: dark;
 
-  /* XP Luna active caption, sampled top -> bottom. */
-  --caption: linear-gradient(180deg,
-      #0058ee 0%, #3593ff 4%, #288eff 6%, #127dff 8%, #036ffc 10%,
-      #0262ee 14%, #0057e5 20%, #0054e3 24%, #0055eb 56%, #005bf5 81%,
-      #003dd7 94%, #003dd7 100%);
+  /* Cool graphite over near-black. The stage is darker than the chrome so the
+     picture reads as the lit object in the room. */
+  --void: #0a0b0d;
+  --panel: #16181d;
+  --raised: #212530;
+  --raised-hi: #2b3040;
+  --edge: #333948;
+  --edge-soft: #262a34;
 
-  /* Media-player control bar: glossy blue with the highlight break at the waist. */
-  --wmp-bar: linear-gradient(180deg,
-      #ecf3fd 0%, #c8ddfa 5%, #8eb3ef 46%, #6893e2 50%, #527fd5 75%, #3964be 100%);
+  --text: #e9ebef;
+  --text-dim: #9aa0ab;
+  /* 4.5:1 against the panel. The silkscreen labels are 10px, which is exactly
+     where a "tasteful" low-contrast grey stops being readable. */
+  --text-faint: #7a818c;
+  --key-icon: #a9afba;
 
-  /* Round button face - bright top, darker waist, light bounce off the bottom. */
-  --button-face: linear-gradient(180deg,
-      #fdfeff 0%, #d8e7fb 44%, #acc7f0 50%, #c4daf7 78%, #e8f2fd 100%);
-  --button-hot: linear-gradient(180deg,
-      #ffffff 0%, #eaf4ff 44%, #c9e0ff 50%, #dceeff 78%, #f4faff 100%);
+  /* The lamp colours. Amber is state; red is the tally and nothing else. */
+  --amber: #ffb224;
+  --amber-dim: #8a6015;
+  --tally: #ff3b30;
+  --tally-rest: #c2484a;
+
+  --font-ui: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system,
+             "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", "Segoe UI Mono",
+               "Roboto Mono", Menlo, Consolas, monospace;
+
+  --r: 7px;
+  --r-sm: 5px;
 }
 
 * { box-sizing: border-box; }
@@ -42,35 +64,39 @@
 html, body {
   height: 100%;
   margin: 0;
-  background: #5a7edc;
-  font: 11px Tahoma, "Segoe UI", Verdana, sans-serif;
-  color: var(--bar-text);
+  background: var(--void);
+  color: var(--text);
+  font: 400 13px/1.5 var(--font-ui);
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
-body {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  /* The XP desktop, more or less: Bliss without the photograph. */
-  background:
-    radial-gradient(120% 80% at 50% 100%, #6ba43a 0%, #3f7a22 40%, transparent 41%),
-    linear-gradient(180deg, #1d4fa0 0%, #3f86dd 45%, #86bff0 70%, #cfe6f7 100%);
+/* The silkscreen label. Every panel label in the app is this, and nothing else
+   is: it is what separates "what this control is" from "what it says". */
+.tag {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
 }
 
-/* --- the window ---------------------------------------------------------- */
+/* Every readout is mono with tabular figures, so a changing number does not
+   shuffle the characters either side of it. */
+#readout, #amount-value, .node-i, kbd, #help td:first-child {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- shell --------------------------------------------------------------- */
 
 #app {
   display: flex;
   flex-direction: column;
-  width: min(1100px, 100%);
-  height: min(760px, 100%);
-  border: 1px solid var(--luna-edge);
-  border-radius: 8px 8px 3px 3px;
-  background: var(--face);
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
+  height: 100%;
+  background: var(--panel);
 }
 
 /* --- title bar ----------------------------------------------------------- */
@@ -78,74 +104,192 @@ body {
 #titlebar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 4px 0 6px;
-  background: var(--caption);
-  border-bottom: 1px solid #0a246a;
-  color: #fff;
-  font-weight: bold;
-  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.55);
-  user-select: none;
+  gap: 16px;
   flex: none;
+  height: 52px;
+  padding: 0 14px 0 18px;
+  border-bottom: 1px solid var(--edge-soft);
+  user-select: none;
 }
 
-#title-icon {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  background: radial-gradient(circle at 50% 50%, #eaf2ff 0 34%, #0054e3 36% 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+#wordmark {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  color: var(--amber);
+}
+#wordmark .mark { width: 19px; height: 19px; }
+#wordmark b {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text);
 }
 
-#title-text { font-size: 12px; }
-
-#title-status {
+#signal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   margin-left: auto;
-  font-weight: normal;
-  font-size: 10px;
-  opacity: 0.9;
-  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+#title-status {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-#title-buttons { display: flex; gap: 2px; }
+/* The tally lamp for the source itself: dark when there is no picture. */
+#lamp {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--edge);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+#lamp.live {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px rgb(255 178 36 / 0.14), 0 0 10px rgb(255 178 36 / 0.55);
+}
 
-.cap {
-  width: 21px;
-  height: 21px;
-  border: 1px solid #fff;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #4d90ff 0%, #1a6ae8 50%, #0b4fc2 100%);
-  color: #fff;
-  font: bold 11px Tahoma, sans-serif;
+#title-buttons { display: flex; gap: 2px; flex: none; }
+
+/* --- buttons ------------------------------------------------------------- */
+
+.ghost, .key {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
   cursor: pointer;
-  line-height: 1;
+  transition: color 120ms ease, background 120ms ease,
+              border-color 120ms ease, box-shadow 120ms ease;
 }
-.cap:hover { background: linear-gradient(180deg, #79b0ff 0%, #3d86f5 50%, #1a5fd0 100%); }
-.cap:active { background: linear-gradient(180deg, #0b4fc2 0%, #1a6ae8 50%, #4d90ff 100%); }
+.ghost svg, .key svg { width: 20px; height: 20px; display: block; }
 
-/* --- the picture --------------------------------------------------------- */
+.ghost { width: 30px; height: 30px; }
+.ghost:hover { color: var(--text); background: var(--raised); }
+
+.key {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-color: var(--edge-soft);
+  background: var(--raised);
+  color: var(--key-icon);
+}
+.key:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--raised-hi);
+  border-color: var(--edge);
+}
+.key:active:not(:disabled) { transform: translateY(1px); }
+.key:disabled { opacity: 0.32; cursor: default; }
+
+.key.big { width: 42px; height: 42px; border-radius: var(--r); }
+.key.big svg { width: 22px; height: 22px; }
+
+.key.sm { width: 26px; height: 26px; }
+.key.sm svg { width: 16px; height: 16px; }
+
+/* Lit state - the one visual language for "this is on". */
+.key.on {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+  background: rgb(255 178 36 / 0.09);
+}
+
+#btn-play .i-pause, #btn-play.playing .i-play { display: none; }
+#btn-play.playing .i-pause { display: block; }
+#btn-play { color: var(--text); }
+
+#btn-rec { color: var(--tally-rest); }
+#btn-rec:hover:not(:disabled) { color: var(--tally); }
+#btn-rec.on {
+  color: var(--tally);
+  border-color: #6d2320;
+  background: rgb(255 59 48 / 0.11);
+  animation: tally 1.4s ease-in-out infinite;
+}
+@keyframes tally {
+  50% { box-shadow: 0 0 0 3px rgb(255 59 48 / 0.13), 0 0 14px rgb(255 59 48 / 0.4); }
+}
+
+.primary {
+  padding: 9px 18px;
+  border: 1px solid var(--amber-dim);
+  border-radius: var(--r-sm);
+  background: rgb(255 178 36 / 0.1);
+  color: var(--amber);
+  font: 600 12px/1 var(--font-ui);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.primary:hover { background: rgb(255 178 36 / 0.18); color: #ffca5e; }
+
+.divider {
+  flex: none;
+  width: 1px;
+  height: 26px;
+  margin: 0 7px;
+  background: var(--edge);
+}
+
+/* --- stage --------------------------------------------------------------- */
 
 #stage {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  background: var(--stage);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--void);
+}
+
+/* The bezel. Without a hairline the picture's own dark edges dissolve into the
+   stage and you cannot tell where the frame stops. */
+#screen {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px solid var(--edge);
+  border-radius: var(--r);
   overflow: hidden;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.5);
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+/*
+ * The tally spills onto the monitor while a take is running.
+ *
+ * This is the one decorative move in the panel, and it earns its place by
+ * being the thing broadcast hardware actually does: a camera with a live tally
+ * lamp is readable from across the room, which is precisely when you most need
+ * to know you are still recording and are not looking at the readout.
+ */
+#app.recording #screen {
+  border-color: rgb(255 59 48 / 0.55);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(255 59 48 / 0.25),
+              0 0 34px rgb(255 59 48 / 0.22);
 }
 
 /* "Contain" scaling: one scale factor for both axes, so the picture is never
-   stretched or cropped - leftover space letterboxes to the stage background. */
+   stretched or cropped - leftover space letterboxes to the stage. */
 #output {
+  display: block;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  display: block;
 }
 
 /* The camera itself is never shown; it exists only to be uploaded as a
@@ -162,340 +306,380 @@ body {
 #message {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   padding: 24px;
-  text-align: center;
-  color: #cfd6e6;
-  font-size: 12px;
-  line-height: 1.6;
-  background: rgba(10, 10, 14, 0.82);
+  background: rgb(10 11 13 / 0.9);
 }
-#message span { max-width: 46ch; white-space: pre-line; }
 #message[hidden] { display: none; }
-#message.error { color: #ffd7d7; }
+
+#message .card {
+  max-width: 40ch;
+  text-align: center;
+}
+#message h1 {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+#message p {
+  margin: 0 0 18px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+}
+#message .hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: var(--raised);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* An error is the one place red appears outside the tally, because it is the
+   same message: something is wrong with the signal. */
+#message.error h1 { color: var(--tally); }
+#message.error .card { max-width: 46ch; }
+#message.error #btn-start { display: none; }
 
 /* --- control bar --------------------------------------------------------- */
 
 #controlbar {
   flex: none;
-  background: var(--wmp-bar);
-  border-top: 1px solid #f3f7fe;
-  box-shadow: inset 0 -1px 0 #2f549e;
-  padding: 6px 8px 8px;
+  padding: 13px 16px 15px;
+  border-top: 1px solid var(--edge-soft);
+  background: var(--panel);
   user-select: none;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   flex-wrap: wrap;
 }
-.row.selects { margin-top: 7px; gap: 10px; }
-
-.divider {
-  width: 1px;
-  height: 20px;
-  margin: 0 3px;
-  background: linear-gradient(180deg, transparent, #2f549e, transparent);
-  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.45);
+.row.selects {
+  gap: 8px 20px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--edge-soft);
 }
-
-/* --- round transport buttons --------------------------------------------- */
-
-.round {
-  width: 26px;
-  height: 26px;
-  flex: none;
-  border: 1px solid #35538f;
-  border-radius: 50%;
-  background: var(--button-face);
-  box-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.28);
-  cursor: pointer;
-  position: relative;
-  padding: 0;
-  color: #1b3a6b;
-  font: 12px Tahoma, sans-serif;
-}
-.round.big { width: 34px; height: 34px; }
-.round:hover { background: var(--button-hot); }
-.round:active { box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35); }
-.round:disabled { opacity: 0.45; cursor: default; }
-.round.on {
-  background: linear-gradient(180deg, #cfe9ff 0%, #8fc2f4 50%, #6aa8e8 100%);
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
-}
-
-/* The glyphs are drawn rather than typed: a triangle and two bars set in a
-   font are at the mercy of whatever the browser substitutes, and at 26px the
-   difference between a centred play arrow and an off-centre one is obvious. */
-.round::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-}
-
-#btn-play::before {
-  width: 0; height: 0;
-  border-left: 11px solid #1b3a6b;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  transform: translateX(2px);
-}
-#btn-play.playing::before {
-  width: 10px; height: 12px;
-  border: none;
-  transform: none;
-  background: linear-gradient(90deg, #1b3a6b 0 38%, transparent 38% 62%, #1b3a6b 62% 100%);
-}
-
-#btn-prev::before, #btn-next::before {
-  width: 0; height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-}
-#btn-prev::before { border-right: 8px solid #1b3a6b; transform: translateX(-1px); }
-#btn-next::before { border-left: 8px solid #1b3a6b; transform: translateX(1px); }
-
-#btn-mirror::before {
-  width: 13px; height: 13px;
-  background: linear-gradient(90deg, #1b3a6b 0 44%, transparent 44% 56%, #6d8bb8 56% 100%);
-  clip-path: polygon(0 12%, 44% 0, 44% 100%, 0 88%, 0 12%,
-                     56% 0, 100% 12%, 100% 88%, 56% 100%);
-}
-
-#btn-rec::before {
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff8f8f, #d40000 70%);
-}
-#btn-rec.on { animation: pulse 1.2s ease-in-out infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 0 3px rgba(224, 0, 0, 0.45); } }
-
-#btn-snap::before {
-  width: 15px; height: 11px;
-  border: 2px solid #1b3a6b;
-  border-radius: 2px;
-  background:
-    radial-gradient(circle at 50% 55%, #1b3a6b 0 2.5px, transparent 2.6px);
-}
-
-/* --- readout and stack chips --------------------------------------------- */
 
 #readout {
-  min-width: 8.5em;
-  padding: 3px 7px;
-  margin-left: 4px;
-  border: 1px solid #2f549e;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #0d1c33, #16294a);
-  box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.6);
-  color: #9ad2ff;
-  font: 10px "Lucida Console", Consolas, monospace;
+  min-width: 12ch;
+  margin-left: 10px;
+  padding: 6px 11px;
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm);
+  background: var(--void);
+  color: var(--amber);
+  font-size: 11px;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   text-align: center;
 }
+#readout.idle { color: var(--text-faint); }
+#readout.rec { color: var(--tally); }
 
-.stack {
+/* --- the signal chain ---------------------------------------------------- */
+
+/*
+ * The signature of the panel, and the one place it says something the rest of
+ * the interface cannot. A stack of effects IS a signal chain - source into
+ * layer into layer into output - and order carries more of the expressive
+ * range than any single effect does. So it is drawn as one: connected nodes,
+ * left to right, each carrying its position and what is in it.
+ *
+ * Numbering is information here rather than decoration; the numbers are the
+ * 1-6 keys that select each layer. A layer holding the pass-through is drawn
+ * hollow, so an unfilled slot reads as unfilled without having to be hovered.
+ */
+
+.chain-group {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 10px;
   margin-left: auto;
+  min-width: 0;
 }
 
-#chips { display: flex; gap: 3px; margin-right: 4px; }
+#chain {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#chain::-webkit-scrollbar { display: none; }
 
-.chip {
-  width: 20px;
-  height: 20px;
-  border: 1px solid #35538f;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #fdfeff, #cfe0f7 50%, #eaf2fd);
-  color: #1b3a6b;
-  font: bold 10px Tahoma, sans-serif;
+.node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--edge-soft);
+  border-radius: 13px;
+  background: var(--raised);
+  color: var(--text-dim);
+  font: 400 11px/1 var(--font-ui);
   cursor: pointer;
-  padding: 0;
+  transition: color 120ms ease, border-color 120ms ease,
+              background 120ms ease, box-shadow 120ms ease;
 }
-.chip.active {
-  background: var(--wmp-bar);
-  border-color: #16305e;
-  color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-}
-.chip.busy::after {
-  /* A layer holding something other than the pass-through gets a dot, so the
-     stack reads at a glance without hovering every chip. */
+.node + .node { margin-left: 15px; }
+
+/* The patch cable between one layer and the next. */
+.node + .node::before {
   content: "";
-  display: block;
-  width: 3px; height: 3px;
-  margin: 1px auto 0;
-  border-radius: 50%;
-  background: currentColor;
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  width: 16px;
+  height: 1px;
+  background: var(--edge);
 }
 
-.tiny {
-  width: 20px;
-  height: 20px;
-  border: 1px solid #35538f;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #fdfeff, #d8e7fb 50%, #eaf2fd);
-  box-shadow: inset 0 1px 0 #fff;
-  color: #1b3a6b;
-  font: bold 11px Tahoma, sans-serif;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
+.node-i {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  transition: color 120ms ease;
 }
-.tiny:hover { background: var(--button-hot); }
-.tiny:disabled { opacity: 0.4; cursor: default; }
+.node-name {
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node:hover { color: var(--text); border-color: var(--edge); }
+
+/* A pass-through layer: room made, nothing in it yet. */
+.node.empty {
+  background: transparent;
+  border-style: dashed;
+  color: var(--text-faint);
+}
+
+.node.lit {
+  color: var(--amber);
+  border-color: var(--amber-dim);
+  background: rgb(255 178 36 / 0.09);
+  box-shadow: 0 0 12px rgb(255 178 36 / 0.12);
+}
+.node.lit .node-i { color: var(--amber); }
+
+.stack-edit { display: flex; gap: 3px; flex: none; }
 
 /* --- fields -------------------------------------------------------------- */
 
 .field {
   display: flex;
   align-items: center;
-  gap: 5px;
-  color: #f2f7ff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
-  flex: 1 1 190px;
+  gap: 9px;
+  flex: 1 1 210px;
   min-width: 0;
 }
-.field.narrow { flex: 0 1 150px; }
-.field.slider { flex: 1 1 210px; }
-.field > span { flex: none; }
+.field.narrow { flex: 0 1 165px; }
+.field.slider { flex: 1 1 230px; }
 
 select {
   flex: 1 1 auto;
   min-width: 0;
-  height: 21px;
-  padding: 1px 3px;
-  border: 1px solid var(--groove-dark);
-  border-radius: 2px;
-  background: #fff;
-  box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.12);
-  font: 11px Tahoma, "Segoe UI", sans-serif;
-  color: #10203c;
-}
-select:focus { outline: 1px dotted #0a246a; outline-offset: 1px; }
-option:disabled { color: #999; }
-
-/* The trackbar: a recessed groove with a raised thumb, the XP way round. */
-input[type="range"] {
-  flex: 1 1 auto;
-  min-width: 60px;
-  height: 18px;
+  height: 30px;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--edge-soft);
+  border-radius: var(--r-sm);
+  background-color: var(--raised);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238d939e' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 12px;
+  color: var(--text);
+  font: 400 12px/1 var(--font-ui);
   -webkit-appearance: none;
   appearance: none;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+select:hover { border-color: var(--edge); background-color: var(--raised-hi); }
+option:disabled { color: var(--text-faint); }
+
+/* --- the amount trackbar ------------------------------------------------- */
+
+/* The fill is a gradient driven by --fill, which main.js writes on every
+   change. Chromium has no native progress element on a range input, so the
+   alternative is a slider that never looks like it holds a value. */
+input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 70px;
+  height: 26px;
+  margin: 0;
   background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
 }
 input[type="range"]::-webkit-slider-runnable-track {
-  height: 5px;
-  border: 1px solid var(--groove-dark);
-  border-bottom-color: var(--groove-light);
-  border-right-color: var(--groove-light);
+  height: 4px;
   border-radius: 2px;
-  background: linear-gradient(180deg, #b6c6dc, #e6eefa);
+  background: linear-gradient(90deg,
+      var(--amber) 0 var(--fill, 100%), var(--edge) var(--fill, 100%) 100%);
 }
 input[type="range"]::-moz-range-track {
-  height: 5px;
-  border: 1px solid var(--groove-dark);
+  height: 4px;
   border-radius: 2px;
-  background: linear-gradient(180deg, #b6c6dc, #e6eefa);
+  background: var(--edge);
+}
+input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--amber);
 }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 17px;
-  margin-top: -7px;
-  border: 1px solid #35538f;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #fdfeff, #d8e7fb 50%, #b9d2f2);
-  box-shadow: inset 0 1px 0 #fff;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: none;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+  transition: box-shadow 120ms ease;
 }
 input[type="range"]::-moz-range-thumb {
-  width: 10px;
-  height: 17px;
-  border: 1px solid #35538f;
-  border-radius: 2px;
-  background: linear-gradient(180deg, #fdfeff, #d8e7fb 50%, #b9d2f2);
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+}
+input[type="range"]:hover::-webkit-slider-thumb {
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.6), 0 0 0 6px rgb(255 178 36 / 0.14);
 }
 
 #amount-value {
   flex: none;
-  width: 3em;
+  width: 4ch;
   text-align: right;
-  font: 10px "Lucida Console", Consolas, monospace;
-  color: #f2f7ff;
+  font-size: 11px;
+  color: var(--text-dim);
 }
+
+/* --- focus --------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+select:focus-visible { outline-offset: 1px; }
 
 /* --- help ---------------------------------------------------------------- */
 
 #help {
   position: fixed;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.45);
   z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(6 7 9 / 0.72);
 }
 #help[hidden] { display: none; }
 
 #help .panel {
-  width: min(430px, 100%);
+  width: min(440px, 100%);
   max-height: 100%;
   overflow: auto;
-  padding: 16px 18px;
-  border: 1px solid var(--luna-edge);
-  border-radius: 6px;
-  background: var(--face);
-  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
-  line-height: 1.55;
+  padding: 24px 26px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.6);
 }
-#help h2 { margin: 0 0 8px; font-size: 14px; }
-#help p { margin: 0 0 10px; }
-#help table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
-#help td { padding: 2px 6px; vertical-align: top; }
-#help td:first-child {
-  white-space: nowrap;
-  font-weight: bold;
-  color: #1b3a6b;
-  width: 8.5em;
+#help h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--amber);
 }
-#help tr:nth-child(odd) { background: rgba(255, 255, 255, 0.55); }
-#help .fine { color: #444; }
-#help button {
-  padding: 4px 16px;
-  border: 1px solid var(--groove-dark);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #fdfeff, #e3e0d2 50%, #f4f2e9);
-  font: 11px Tahoma, sans-serif;
-  cursor: pointer;
+#help h3 {
+  margin: 20px 0 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
-
-/* --- fullscreen ---------------------------------------------------------- */
-
-/* In fullscreen the window chrome is the whole screen, so the rounded corners
-   and the drop shadow are just a seam against the monitor's edge. */
-#app:fullscreen {
+#help p {
+  margin: 0 0 12px;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+#help table {
   width: 100%;
-  height: 100%;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
+  margin-bottom: 16px;
+  border-collapse: collapse;
+  font-size: 12px;
 }
+#help td { padding: 5px 0; vertical-align: top; border-top: 1px solid var(--edge-soft); }
+#help tr:first-child td { border-top: none; }
+#help td:first-child {
+  width: 10em;
+  padding-right: 12px;
+  font-size: 11px;
+  color: var(--amber);
+  white-space: nowrap;
+}
+#help td:last-child { color: var(--text-dim); }
+#help .fine { margin-bottom: 18px; font-size: 12px; color: var(--text-faint); }
 
 /* --- small screens ------------------------------------------------------- */
 
-@media (max-width: 620px) {
-  body { padding: 0; }
-  #app { width: 100%; height: 100%; border-radius: 0; border: none; }
+@media (max-width: 760px) {
+  #titlebar { height: 46px; padding: 0 10px 0 12px; }
+  #signal { font-size: 11px; }
+  #stage { padding: 10px; }
+  #controlbar { padding: 10px 12px 12px; }
+
+  /* The chain gets the full width rather than fighting the transport row for
+     it - it is the control most likely to hold six items. */
+  .chain-group {
+    order: 3;
+    flex: 1 1 100%;
+    margin-left: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--edge-soft);
+  }
+  #readout { margin-left: auto; }
   .field { flex: 1 1 100%; }
-  #readout { min-width: 0; flex: 1 1 auto; }
-  .stack { margin-left: 0; flex: 1 1 100%; justify-content: center; }
+  .field.narrow { flex: 1 1 100%; }
+}
+
+@media (max-width: 420px) {
+  #wordmark b { display: none; }
+}
+
+/* --- motion -------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

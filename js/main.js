@@ -31,14 +31,18 @@ const dom = {
   canvas: el("output"),
   video: el("feed"),
   message: el("message"),
+  msgTitle: el("msg-title"),
+  msgBody: el("msg-body"),
   status: el("title-status"),
+  lamp: el("lamp"),
   readout: el("readout"),
+  start: el("btn-start"),
   device: el("device"),
   resolution: el("resolution"),
   effect: el("effect"),
   amount: el("amount"),
   amountValue: el("amount-value"),
-  chips: el("chips"),
+  chain: el("chain"),
   play: el("btn-play"),
   prev: el("btn-prev"),
   next: el("btn-next"),
@@ -73,10 +77,22 @@ const app = {
 
 // --- messages over the picture ---------------------------------------------
 
-function message(text, isError = false) {
-  dom.message.hidden = !text;
-  dom.message.classList.toggle("error", isError);
-  dom.message.firstElementChild.textContent = text || "";
+/*
+ * The overlay over the stage, in one of three moods:
+ *
+ *   "start"  an invitation, with the button and the shortcut
+ *   "busy"   a bare line while something is happening
+ *   "error"  a headline and what to do about it, no button
+ *
+ * Passing no title hides it. Keeping the three in one function is what stops
+ * the stage ending up with a start button on top of an error.
+ */
+function message(title, body = "", mode = "busy") {
+  dom.message.hidden = !title;
+  dom.message.className = title ? mode : "";
+  dom.msgTitle.textContent = title || "";
+  dom.msgBody.textContent = body || "";
+  dom.msgBody.hidden = !body;
 }
 
 /** A line in the readout that fades back to the resolution after a moment. */
@@ -208,36 +224,67 @@ function buildResolutionMenu() {
 function refresh() {
   const chain = app.chain;
 
-  dom.chips.innerHTML = "";
+  dom.chain.innerHTML = "";
   chain.layers.forEach((layer, index) => {
-    const chip = document.createElement("button");
-    chip.className = "chip"
-      + (index === chain.active ? " active" : "")
-      + (layer.effect.name !== "None" ? " busy" : "");
-    chip.textContent = String(index + 1);
-    chip.title = "Layer " + (index + 1) + ": " + layer.effect.name
+    const node = document.createElement("button");
+    node.className = "node"
+      + (index === chain.active ? " lit" : "")
+      + (layer.effect.name === "None" ? " empty" : "");
+    node.title = "Layer " + (index + 1) + ": " + layer.effect.name
       + " @ " + layer.amount.toFixed(2);
-    chip.addEventListener("click", () => {
+
+    const position = document.createElement("span");
+    position.className = "node-i";
+    position.textContent = String(index + 1);
+
+    const name = document.createElement("span");
+    name.className = "node-name";
+    name.textContent = layer.effect.name;
+
+    node.append(position, name);
+    node.addEventListener("click", () => {
       if (chain.select(index)) refresh();
     });
-    dom.chips.appendChild(chip);
+    dom.chain.appendChild(node);
   });
 
   dom.effect.value = chain.effect.name;
   dom.amount.value = Math.round(chain.amount * 100);
-  dom.amountValue.textContent = chain.amount.toFixed(2);
+  setAmountReadout();
 
   dom.add.disabled = chain.length >= MAX_LAYERS;
   dom.del.disabled = chain.length <= 1;
   dom.down.disabled = chain.active === 0;
   dom.up.disabled = chain.active === chain.length - 1;
 
+  const recording = !!(app.recorder && app.recorder.recording);
   dom.mirror.classList.toggle("on", app.renderer.mirror);
   dom.play.classList.toggle("playing", app.camera.live);
-  dom.rec.classList.toggle("on", app.recorder && app.recorder.recording);
+  dom.rec.classList.toggle("on", recording);
+  // Spills the tally onto the monitor bezel, so a running take is readable
+  // from across the room rather than only from the readout.
+  dom.app.classList.toggle("recording", recording);
 
-  dom.status.textContent = chain.describe();
+  // The chain rail already says what the stack is, so the title bar says the
+  // one thing nothing else does: whether there is a signal, and from what.
+  const live = app.camera.live;
+  dom.lamp.classList.toggle("live", live);
+  dom.status.textContent = live ? "Live · " + app.camera.label : "Camera off";
+
   saveLook();
+}
+
+/**
+ * The number beside the trackbar, and the trackbar's own fill.
+ *
+ * Chromium has no native progress on a range input, so the fill is a gradient
+ * driven by a custom property - without it the slider never looks like it is
+ * holding a value.
+ */
+function setAmountReadout() {
+  const amount = app.chain.amount;
+  dom.amountValue.textContent = amount.toFixed(2);
+  dom.amount.style.setProperty("--fill", Math.round(amount * 100) + "%");
 }
 
 /** Wipe the feedback history and reseed it from the live picture. */
@@ -260,7 +307,7 @@ async function startCamera(deviceId = null) {
     const [width, height] = dom.resolution.value.split("x").map(Number);
     await app.camera.open(deviceId, width, height);
   } catch (exc) {
-    message(String(exc.message || exc), true);
+    message("No picture", String(exc.message || exc), "error");
     app.renderer.clear();
     refresh();
     return false;
@@ -274,7 +321,9 @@ async function startCamera(deviceId = null) {
 function stopCamera() {
   app.camera.stop();
   app.renderer.clear();
-  message("Camera stopped. Press Play to start it again.");
+  message("Camera stopped",
+          "Nothing is being captured. Start it again whenever you like.",
+          "start");
   refresh();
 }
 
@@ -308,23 +357,33 @@ function frame() {
   updateReadout(now);
 }
 
+/*
+ * The readout has one slot and three things that want it, in priority order:
+ * the running take, a just-saved confirmation, and otherwise what the signal
+ * is. Recording outranks the rest because it is the only one you cannot
+ * recover if you miss it.
+ */
 function updateReadout(now) {
+  const set = (text, tone) => {
+    dom.readout.textContent = text;
+    dom.readout.className = tone || "";
+  };
+
   if (app.recorder && app.recorder.recording) {
     const seconds = app.recorder.elapsed;
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(Math.floor(seconds % 60)).padStart(2, "0");
-    dom.readout.textContent = "● REC  " + mm + ":" + ss;
+    set("REC " + mm + ":" + ss, "rec");
     return;
   }
   if (app.toast && now < app.toastUntil) {
-    dom.readout.textContent = app.toast;
+    set(app.toast);
     return;
   }
   app.toast = "";
   const [width, height] = app.renderer.sourceSize;
-  dom.readout.textContent = width
-    ? width + " x " + height + "  " + app.fps + "fps"
-    : "–";
+  if (!width) return set("No signal", "idle");
+  set(width + "×" + height + "  " + app.fps + " FPS");
 }
 
 // --- input ------------------------------------------------------------------
@@ -353,7 +412,7 @@ function wire() {
 
   dom.amount.addEventListener("input", () => {
     app.chain.setAmount(dom.amount.value / 100);
-    dom.amountValue.textContent = app.chain.amount.toFixed(2);
+    setAmountReadout();
     saveLook();
   });
 
@@ -372,11 +431,7 @@ function wire() {
     if (event.target === dom.help) dom.help.hidden = true;
   });
 
-  // Clicking the picture when nothing is running is the obvious way to start
-  // it, and on a phone it is a much bigger target than the play button.
-  dom.message.addEventListener("click", () => {
-    if (!app.camera.live) startCamera(dom.device.value || null);
-  });
+  dom.start.addEventListener("click", () => startCamera(dom.device.value || null));
 
   // A camera can be unplugged, or taken by another app, mid-session.
   navigator.mediaDevices?.addEventListener?.("devicechange", async () => {
@@ -398,7 +453,7 @@ async function toggleRecording() {
     try {
       app.recorder.start();
     } catch (exc) {
-      return message(String(exc.message || exc), true);
+      return message("Cannot record", String(exc.message || exc), "error");
     }
   }
   refresh();
@@ -482,20 +537,20 @@ async function boot() {
   try {
     app.renderer = new Renderer(dom.canvas);
   } catch (exc) {
-    return message(
+    return message("This browser cannot run the effects",
       String(exc.message || exc)
       + " Every browser released since 2021 has it; if this is a desktop machine, "
-      + "hardware acceleration may be turned off in the browser's settings.", true);
+      + "hardware acceleration may be turned off in the browser's settings.", "error");
   }
 
   let sources;
   try {
     sources = await loadShaderSources();
   } catch (exc) {
-    return message(
-      "Could not load the shaders (" + (exc.message || exc) + "). If you opened "
+    return message("Could not load the shaders",
+      (exc.message || exc) + ". If you opened "
       + "this from a file:// path, that is why - the page has to be served over "
-      + "http. Use the single-file build instead, or run a local server.", true);
+      + "http. Run a local server, or use the single-file build.", "error");
   }
 
   app.library = new EffectLibrary(app.renderer.gl, sources);
@@ -519,8 +574,9 @@ async function boot() {
   // The camera is not opened until asked for. Opening it on load would put a
   // permission prompt in front of someone who has not yet seen what the page
   // is, which is the fastest way to be denied it.
-  message("Press Play, or click here, to start the camera.\n"
-    + "Nothing you see leaves this page.");
+  message("Start the camera",
+    "Your video stays on this device. It is never uploaded, and there is no "
+    + "server behind this page.", "start");
 }
 
 boot();
