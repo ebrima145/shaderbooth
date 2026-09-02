@@ -7,7 +7,7 @@ This is everything else.
 ## Contents
 
 - [What it does](#what-it-does)
-- [The idea: the desktop stack, minus the desktop](#the-idea-the-desktop-stack-minus-the-desktop)
+- [Where the effects come from](#where-the-effects-come-from)
 - [The camera](#the-camera)
 - [The control bar](#the-control-bar)
 - [Effects](#effects)
@@ -34,21 +34,20 @@ canvas is what `MediaRecorder` records and what `toBlob` saves.
 Thirty-four effects, in five groups. Six layers. One intensity per layer. No
 network traffic after the page loads.
 
-## The idea: the desktop stack, minus the desktop
+## Where the effects come from
 
-The desktop [Universal Player](../Universal%20Player) exists to put three
-kinds of picture — media files, cameras, Spout senders — through one shared
-effect stack. Two thirds of that is Windows-specific: libmpv for files, Spout
-for GPU texture sharing between applications. The camera third is not. A
-browser has had a camera API for a decade and a shader pipeline for longer,
-and the effects were written against a vocabulary (`source()`, `feedback()`,
-`u_amount`) that says nothing about where the picture came from.
+The effects started life in a native OpenGL player, written against desktop
+GLSL and a vocabulary — `source()`, `feedback()`, `u_amount` — that says
+nothing about where the picture came from. That turned out to be the whole
+reason they could move: a browser has had a camera API for a decade and a
+shader pipeline for longer, and nothing in the effect files ever knew which
+was underneath them.
 
 So this is not a rewrite of the effects. It is the same `.frag` files with a
 different preamble in front of them and a different host underneath. The
 things worth carrying over came over intact — the per-layer feedback buffers,
 the mirror-and-flip-on-the-first-pass rule, the pass-through-is-a-real-effect
-rule, the mipmap trick for the mosaic family — because each of them was a bug
+rule, the mipmap detour for the mosaic family — because each of them was a bug
 first and a decision second, and re-earning them would have cost the same
 evenings twice.
 
@@ -88,11 +87,11 @@ camera that tops out at 640×480 gets you 640×480; `{exact: 1920}` gets you an
 `OverconstrainedError` and no picture at all. The readout shows what was
 actually granted, which is frequently not what was asked for.
 
-**Nothing needs a capture thread.** The desktop player runs OpenCV's blocking
-`read()` on a worker because calling it from the UI clock would stall the
-whole window for up to a frame interval. Here the `<video>` element is
-decoding on its own and reading it is a texture upload, so the render loop has
-nothing in it that can block.
+**Nothing needs a capture thread.** A native app has to put the driver's
+blocking frame read on a worker, because calling it from the UI clock stalls
+the whole window for up to a frame interval every tick. Here the `<video>`
+element is decoding on its own and reading it is a texture upload, so there is
+nothing in the render loop that can block.
 
 ## The control bar
 
@@ -333,8 +332,10 @@ mat2  rot(float a);
 const float TAU;
 ```
 
-`camera()` and `camuv()` exist as aliases of `source()` and `srcuv()`, kept so
-that effects written for the desktop player read the same here.
+`camera()` and `camuv()` are aliases of `source()` and `srcuv()`, kept because
+the effects were written against those names before the source could be
+anything but a camera. There is no reason for an effect to have to know it
+moved.
 
 **Always read through `source()`, never `texture(src, uv)` directly.** The
 mirror and the flip live inside it; sample the sampler yourself and both
@@ -357,23 +358,22 @@ buys that — and the effect stays in the menu greyed out and marked `(failed)`
 rather than vanishing, because an effect that has silently disappeared is a
 worse bug report than one that is visibly broken.
 
-**Effects are portable between this and the desktop player.** The two
-preambles are the same document with a different header: `#version 300 es`
-plus three `precision` declarations here, `#version 330 core` there. Nothing
-below the header differs. An effect that uses only the vocabulary above will
-compile on both — and both projects' `shaders/` directories hold byte-identical
-copies of every `.frag` today.
+**Effects written here also compile as desktop GLSL.** The preamble is the
+only thing that differs between the two dialects: `#version 300 es` plus three
+`precision` declarations here, `#version 330 core` and no precision qualifiers
+there. Nothing below the header changes. An effect that sticks to the
+vocabulary above will build in either, unmodified.
 
-The one thing to watch is that GLSL ES is stricter about implicit
-conversions than desktop GLSL. Desktop drivers will often accept `float x = 1;`
-where ES demands `1.0`. Writing for ES first gets you both.
+The one thing to watch is that GLSL ES is stricter about implicit conversions.
+Desktop drivers will often accept `float x = 1;` where ES demands `1.0`.
+Writing for ES first gets you both.
 
 ## Project structure
 
 | File | What it does |
 | --- | --- |
 | `index.html` | The window: title bar, stage, control bar, help panel |
-| `css/style.css` | The Luna chrome, transcribed from the desktop palettes |
+| `css/style.css` | The Luna chrome: palette, gloss and motion |
 | `js/main.js` | Entry point: owns the camera, the chain, the renderer and the input, and the only file that touches the DOM |
 | `js/effects.js` | The catalogue, the GLSL compiler, the shader loader |
 | `js/chain.js` | The stack of layers and the rules for editing it |
@@ -385,10 +385,6 @@ where ES demands `1.0`. Writing for ES first gets you both.
 | `shaders/*.frag` | One per effect |
 | `build.mjs` | Folds everything into `dist/shaderbooth.html` |
 | `serve.mjs` | A local static server for developing against |
-
-`chain.js` and `effects.js` are close ports of the desktop `chain.py` and
-`effects.py`; keeping them recognisably the same file is deliberate, so a fix
-in one can be carried to the other by reading rather than by re-deriving.
 
 ## How a frame gets to the screen
 
@@ -533,19 +529,19 @@ the interface rather than only in a README, because "a website that wants my
 camera" is a reasonable thing to be suspicious of and the suspicion is
 answerable.
 
-**The XP chrome is not a joke about the desktop version.** It is the same
-window, so a look built in one reads the same in the other, and the two
-projects stay recognisably one thing. The palettes in `style.css` are the same
-stop lists `xp_style.py` draws its gradients from. What makes XP chrome read
-as XP is mostly the multi-stop caption curve — brightening sharply near the
-top, dipping, lifting again before the dark bottom edge — and the bevels being
-consistently the right way round.
+**The XP chrome is not a joke.** It is a real theme executed properly, and
+what makes it read as XP rather than as blue rectangles is narrower than it
+looks: the caption is a *multi-stop* curve, not a two-colour ramp — it
+brightens sharply near the top, dips, then lifts again before the dark bottom
+edge — and every bevel runs the same way round, grooves dark on the top-left
+and light on the bottom-right, raised faces the reverse. Lose either and the
+whole thing goes flat.
 
 **Luna was a glossy theme, and gloss is the first thing that dies when it gets
 flattened.** A dark, flat, neutral panel was tried and thrown away: it was
 perfectly competent and completely lifeless, and it turned an app that is fun
 to open into one that looks like configuration. So the palette here is not
-muted, cooled, or "modernised" — those are the desktop stop lists exactly.
+muted, cooled, or "modernised" — those are the Luna stop lists exactly.
 
 **What was added instead is the movement a screenshot of XP could never show
 you.** Everything that answers a pointer eases rather than snaps, on one shared
