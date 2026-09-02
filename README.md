@@ -71,9 +71,11 @@ to gets the look, not a screen recording and an explanation.
 ## Using it
 
 Pick a camera from the left drop-down and an effect from the right one. The
-numbered chips are the stack, bottom layer first — click one to point the
-effect box and the Amount slider at that layer. `+` adds a layer above the
-active one, `−` deletes it, `◀` `▶` move it down and up the stack.
+numbered tabs on the right of the transport row are the stack, bottom layer
+first, and each one carries the name of the effect in it — a layer still
+holding the pass-through is greyed and italic. Click a tab to point the effect
+box and the Amount slider at that layer. `+` adds a layer above the active one,
+`−` deletes it, `◀` `▶` move it down and up the stack.
 
 Intensity means something different in each effect. It is wired to whatever
 knob actually matters for that one, not to a blend against the original: it is

@@ -108,12 +108,16 @@ using the app.
 Then record, snapshot, and the readout — resolution and frame rate normally, a
 running clock while recording, and a short confirmation when a file is saved.
 
-On the right, the stack: numbered chips, bottom layer first. A chip carries a
-dot when its layer holds something other than the pass-through, so the shape of
-a stack reads without hovering every chip. `+` inserts a layer *above* the
-active one — the active layer is what you were just looking at, so that is
-where the next one belongs — `−` deletes it, and the two arrows move it
-through the stack.
+On the right, the stack: a row of tabs, bottom layer first, each carrying its
+position and the name of the effect in it. A layer still holding the
+pass-through is greyed and italic, so an unfilled slot reads as unfilled. The
+number is not decoration — it is the `1`–`6` key that selects that layer. `+`
+inserts a layer *above* the active one — the active layer is what you were just
+looking at, so that is where the next one belongs — `−` deletes it, and the two
+arrows move it through the stack.
+
+The title bar carries the whole chain as one line, untruncated, which is what
+the tab strip cannot do once six long names are in it.
 
 The bottom row is the four selectors: camera, size, effect, amount.
 
@@ -191,7 +195,7 @@ see [How a frame gets to the screen](#how-a-frame-gets-to-the-screen).
 
 A layer is one full pass over the whole frame: it reads what the layer below
 it produced and writes what the layer above it will read. The stack runs
-bottom-to-top, from chip `1` on the left.
+bottom-to-top, from tab `1` on the left.
 
 Order is not a detail — it is most of the expressive range. Halftone over Edge
 Glow prints the edges as dots; Edge Glow over Halftone finds the outline of
@@ -537,10 +541,36 @@ as XP is mostly the multi-stop caption curve — brightening sharply near the
 top, dipping, lifting again before the dark bottom edge — and the bevels being
 consistently the right way round.
 
+**Luna was a glossy theme, and gloss is the first thing that dies when it gets
+flattened.** A dark, flat, neutral panel was tried and thrown away: it was
+perfectly competent and completely lifeless, and it turned an app that is fun
+to open into one that looks like configuration. So the palette here is not
+muted, cooled, or "modernised" — those are the desktop stop lists exactly.
+
+**What was added instead is the movement a screenshot of XP could never show
+you.** Everything that answers a pointer eases rather than snaps, on one shared
+curve so nothing is out of step; the sky drifts on a two-and-a-half minute
+cycle, slow enough to read as weather; the window arrives rather than
+appearing; the lens in the title bar opens while a picture is live; and the
+trackbar fills with the XP progress green. All of it is period-plausible — XP
+animated its own chrome — and all of it is behind `prefers-reduced-motion`.
+
+**The layer strip carries names now.** It used to be six numbered squares,
+which meant the only way to find out what was in layer 4 was to hover it. A tab
+strip is the period-correct control for "several things, one of them current",
+and it costs nothing but width that the row already had.
+
+**The trackbar fill was the most-missed piece of feedback.** Chromium has no
+native progress on a range input, so a plain custom-styled slider shows a thumb
+on an empty groove and never looks like it is holding a value — on the one
+control whose entire job is holding a value.
+
 **The transport glyphs are drawn in CSS, not typed as characters.** A play
 triangle set in a font is at the mercy of whatever the browser substitutes,
-and at 26px the difference between a centred arrow and an off-centre one is
-obvious.
+and at 27px the difference between a centred arrow and an off-centre one is
+obvious. The mirror glyph is the same arrowhead twice, pointing away from a
+shared axis with the copy faded — two triangles being all the pseudo-element
+budget allows, and clearer than the hollow outline it replaced.
 
 **A broken shader is greyed out, not hidden.** Compilation is eager but
 forgiving; one typo costs you one effect rather than the app.

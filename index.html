@@ -18,38 +18,50 @@
     <span id="title-text">Camera Player</span>
     <span id="title-status">starting&hellip;</span>
     <span id="title-buttons">
-      <button id="btn-help" class="cap" title="Keys and about">?</button>
-      <button id="btn-full" class="cap" title="Fullscreen (F)">&#9744;</button>
+      <button id="btn-help" class="cap" title="Keys and about" aria-label="Keys and about">?</button>
+      <button id="btn-full" class="cap" title="Fullscreen (F)" aria-label="Fullscreen">&#9744;</button>
     </span>
   </div>
 
   <div id="stage">
     <canvas id="output" width="1280" height="720"></canvas>
-    <div id="message"><span></span></div>
+
+    <div id="message">
+      <div class="dialog">
+        <p id="msg-title">Start the camera</p>
+        <p id="msg-body">Your video stays on this device. It is never uploaded,
+           and there is no server behind this page.</p>
+        <button id="btn-start" class="push">Start the camera</button>
+        <p class="hint">or press <kbd>Space</kbd></p>
+      </div>
+    </div>
+
     <video id="feed" playsinline muted autoplay></video>
   </div>
 
   <div id="controlbar">
 
     <div class="row transport">
-      <button id="btn-play" class="round big" title="Start / stop the camera (Space)"></button>
-      <button id="btn-prev" class="round" title="Previous camera (Ctrl + Left)"></button>
-      <button id="btn-next" class="round" title="Next camera (Tab)"></button>
-      <button id="btn-mirror" class="round" title="Mirror horizontally (M)"></button>
+      <button id="btn-play" class="round big" title="Start / stop the camera (Space)" aria-label="Start or stop the camera"></button>
+      <button id="btn-prev" class="round" title="Previous camera (Ctrl + Left)" aria-label="Previous camera"></button>
+      <button id="btn-next" class="round" title="Next camera (Tab)" aria-label="Next camera"></button>
+      <button id="btn-mirror" class="round" title="Mirror horizontally (M)" aria-label="Mirror horizontally"></button>
 
       <span class="divider"></span>
 
-      <button id="btn-rec" class="round rec" title="Record the output (R)"></button>
-      <button id="btn-snap" class="round" title="Save a still (S)"></button>
+      <button id="btn-rec" class="round rec" title="Record the output (R)" aria-label="Record the output"></button>
+      <button id="btn-snap" class="round" title="Save a still (S)" aria-label="Save a still"></button>
 
       <span id="readout">&ndash;</span>
 
       <span class="stack">
         <span id="chips"></span>
-        <button id="btn-add" class="tiny" title="Add a layer above this one (A)">+</button>
-        <button id="btn-del" class="tiny" title="Delete this layer (D)">&minus;</button>
-        <button id="btn-down" class="tiny" title="Move this layer down (,)">&#9664;</button>
-        <button id="btn-up" class="tiny" title="Move this layer up (.)">&#9654;</button>
+        <span class="stack-edit">
+          <button id="btn-add" class="tiny" title="Add a layer above this one (A)" aria-label="Add a layer">+</button>
+          <button id="btn-del" class="tiny" title="Delete this layer (D)" aria-label="Delete this layer">&minus;</button>
+          <button id="btn-down" class="tiny" title="Move this layer down (,)" aria-label="Move this layer down">&#9664;</button>
+          <button id="btn-up" class="tiny" title="Move this layer up (.)" aria-label="Move this layer up">&#9654;</button>
+        </span>
       </span>
     </div>
 
@@ -78,8 +90,8 @@
 </div>
 
 <div id="help" hidden>
-  <div class="panel">
-    <h2>Camera Player</h2>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <h2 id="help-title">Camera Player</h2>
     <p>Your camera, through up to six stacked GLSL effects, on the GPU. Nothing
        leaves this page &mdash; the video never goes to a server, and the
        recordings are written by your own browser.</p>
@@ -101,8 +113,8 @@
     </table>
     <p class="fine">Stacking is the point: Halftone over Edge Glow prints the
        edges as dots, Edge Glow over Halftone finds the outline of the dots.
-       The numbered chips are the stack, bottom layer first.</p>
-    <button id="help-close">Close</button>
+       The numbered tabs are the stack, bottom layer first.</p>
+    <button id="help-close" class="push">Close</button>
   </div>
 </div>
 
