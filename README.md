@@ -47,9 +47,17 @@ do by default:
 
 | Where | How |
 |---|---|
-| **GitHub Pages** | Push this folder, then Settings → Pages → deploy from branch |
+| **GitHub Pages** | Push this folder, then Settings → Pages → deploy from branch. **Keep `.nojekyll`** — see below |
 | **Netlify / Cloudflare Pages / Vercel** | Drag the folder onto the dashboard; no build command |
 | **A plain web server** | Copy the folder into the document root |
+
+**`.nojekyll` is load-bearing on GitHub Pages.** Pages runs everything through
+Jekyll by default, and Jekyll silently drops any file whose name starts with an
+underscore — which is `shaders/_common.glsl` and `shaders/_quad.vert`, the
+preamble every effect is compiled against. Without that empty file at the repo
+root, the deploy looks like it worked, the page loads, and every shader fails
+with a 404. The zero-byte `.nojekyll` turns Jekyll off and the files ship
+verbatim. Nowhere else needs it.
 
 **Or as a single file.** `build.mjs` folds the whole app — HTML, CSS, the six
 JavaScript modules and all thirty-six shaders — into one self-contained
@@ -108,6 +116,11 @@ saves a still.
 
 - **`file://` will never work.** See above. This is the single most common way
   to conclude the app is broken when it isn't.
+
+- **A GitHub Pages deploy without `.nojekyll` serves a broken app.** Jekyll
+  drops the two underscore-prefixed shader files and nothing warns you; the
+  symptom is "Could not load the shaders — `_common.glsl`: HTTP 404" on a
+  deploy that otherwise looks fine.
 
 - **Recordings are WebM, not MP4** (except on Safari, which produces MP4).
   WebM plays in every browser and in VLC, Resolve and Premiere. If you need it
