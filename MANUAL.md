@@ -706,12 +706,30 @@ native progress on a range input, so a plain custom-styled slider shows a thumb
 on an empty groove and never looks like it is holding a value — on the one
 control whose entire job is holding a value.
 
-**The transport glyphs are drawn in CSS, not typed as characters.** A play
-triangle set in a font is at the mercy of whatever the browser substitutes,
-and at 27px the difference between a centred arrow and an off-centre one is
-obvious. The mirror glyph is the same arrowhead twice, pointing away from a
-shared axis with the copy faded — two triangles being all the pseudo-element
-budget allows, and clearer than the hollow outline it replaced.
+**The transport glyphs are inline SVG, from one sprite of eight symbols.** Not
+font characters, which are at the mercy of whatever the browser substitutes —
+at 27px the difference between a centred play arrow and an off-centre one is
+obvious. And no longer CSS shapes either. Those avoid the substitution problem
+but cost a two-pseudo-element budget per button, which is how the camera came
+to read as a briefcase — an outlined box with a dot, the only hollow shape in a
+row of solid ones — and why the flip was two triangles distinguished by
+opacity. It also meant every size needed its own hand-tuned copy of the same
+drawing: about thirty rules across two places, three copies of some.
+
+A `viewBox` scales for free, so one definition serves the 27px bar button, the
+44px touch target and the 62px shutter, and the per-size overrides collapse to
+two lines setting `svg` width. Everything is drawn against `currentColor`, so a
+button changes its glyph by changing its own colour — which is how the record
+button goes from dark red to bright without a second gradient.
+
+The camera is a solid silhouette with the lens knocked out through
+`fill-rule="evenodd"`, so the button's own gradient shows through the barrel.
+
+**`[hidden]` has to outrank layout.** A UA stylesheet only says
+`[hidden] { display: none }`, which any author rule beats — so giving `.round` a
+`display` to centre its glyph silently un-hid every button JS had marked
+hidden, and the phone got its "previous camera" back. The rule is
+`!important` now, which is the one place that is not a smell.
 
 **A broken shader is greyed out, not hidden.** Compilation is eager but
 forgiving; one typo costs you one effect rather than the app.
