@@ -201,6 +201,16 @@ saves a still.
   capturing is the one thing you want to do *while* watching. A take in
   progress still shows its tally in the title bar.
 
+- **Two gestures on the picture.** Swipe left or right steps through the
+  effects in the active layer; double-tap switches camera. Both name what they
+  did in a label over the picture, because the readout is gone while the bars
+  are folded. A swipe starting at the very left edge is left alone — that one
+  belongs to the browser's back gesture.
+
+- **Reload** is a small link in the **⋮** sheet. Installed to a home screen
+  there is no address bar and so no reload button, and that is the only way
+  back from an app that has wedged.
+
 - **On a phone the bars fold away** a few seconds after you stop touching
   them, and a tap on the picture brings them back — the chrome was taking 47%
   of a 375x812 screen. A take in progress keeps its title bar, so the tally and

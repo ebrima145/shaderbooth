@@ -71,6 +71,8 @@ const dom = {
   settingsFields: el("settings-fields"),
   settingsOpen: el("btn-settings"),
   settingsClose: el("settings-close"),
+  settingsReload: el("settings-reload"),
+  flash: el("flash"),
   help: el("help"),
   helpOpen: el("btn-help"),
   helpClose: el("help-close"),
@@ -121,6 +123,19 @@ const app = {
 // short enough that idly watching the picture gets you the whole screen.
 const CHROME_IDLE_MS = 3500;
 
+/*
+ * Gesture thresholds.
+ *
+ * EDGE keeps the leftmost strip out of it: iOS uses that for its own back
+ * gesture, and a swipe starting there belongs to Safari whatever this app
+ * thinks. TAP_SLOP is how far a finger may wander and still count as a tap,
+ * because nobody lifts one off cleanly.
+ */
+const EDGE = 24;
+const SWIPE = 45;
+const TAP_SLOP = 12;
+const DOUBLE_TAP_MS = 300;
+
 // --- messages over the picture ---------------------------------------------
 
 /*
@@ -139,6 +154,20 @@ function message(title, body = "", mode = "busy") {
   dom.msgTitle.textContent = title || "";
   dom.msgBody.textContent = body || "";
   dom.msgBody.hidden = !body;
+}
+
+/**
+ * Say what just happened, over the picture.
+ *
+ * The readout does this job whenever the bars are up, so this is only for the
+ * moments they are not - which on a phone is most of them.
+ */
+let flashTimer = 0;
+function flash(text) {
+  dom.flash.textContent = text;
+  dom.flash.classList.add("on");
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => dom.flash.classList.remove("on"), 900);
 }
 
 /** A line in the readout that fades back to the resolution after a moment. */
@@ -646,6 +675,92 @@ function startTabDrag(event, from) {
   window.addEventListener("pointercancel", onUp);
 }
 
+/*
+ * The picture as a control surface.
+ *
+ * Three gestures, and the awkward one is the overlap between a tap and the
+ * first half of a double-tap. The usual fix is to delay every tap by the
+ * double-tap window, but the tap here toggles the bars - the most frequent
+ * thing anyone does - and 300ms of lag on that to serve an occasional flip is
+ * the wrong trade.
+ *
+ * So the tap acts at once, and a second tap flips the camera *and* toggles the
+ * bars back, cancelling what the first one did. CSS transitions interrupt and
+ * reverse smoothly, so the visible cost is the bars twitching a few pixels
+ * rather than a flash of the whole control bar.
+ *
+ * Touch only. A mouse keeps the plain click-to-toggle: there is no swiping
+ * with a mouse, and a double-click that flipped the camera would be a trap.
+ */
+function wireStageGestures() {
+  if (!TOUCH) {
+    dom.stage.addEventListener("pointerdown", (event) => {
+      if (event.target === dom.canvas || event.target === dom.stage) toggleChrome();
+    });
+    return;
+  }
+
+  let from = null;
+  let swiped = false;
+  let lastTap = 0;
+  let lastX = 0;
+  let lastY = 0;
+
+  const onStage = (event) =>
+    event.target === dom.canvas || event.target === dom.stage;
+
+  dom.stage.addEventListener("pointerdown", (event) => {
+    if (!onStage(event) || event.clientX < EDGE) { from = null; return; }
+    from = { x: event.clientX, y: event.clientY };
+    swiped = false;
+  });
+
+  dom.stage.addEventListener("pointermove", (event) => {
+    if (!from || swiped) return;
+    const dx = event.clientX - from.x;
+    const dy = event.clientY - from.y;
+    // Has to be decisively sideways, or every slightly-diagonal drag towards
+    // the shutter would change the effect on the way.
+    if (Math.abs(dx) < SWIPE || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    swiped = true;
+    // One step per swipe, however far the finger keeps going: a gesture that
+    // kept firing would race past whatever you were looking for.
+    if (app.chain.stepEffect(dx < 0 ? 1 : -1)) {
+      reseed();
+      refresh();
+      flash(app.chain.effect.name);
+    }
+  });
+
+  const end = (event) => {
+    const start = from;
+    from = null;
+    if (!start || swiped) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > TAP_SLOP) return;
+
+    const now = performance.now();
+    const near = Math.hypot(event.clientX - lastX, event.clientY - lastY) < 44;
+    if (now - lastTap < DOUBLE_TAP_MS && near) {
+      lastTap = 0;
+      toggleChrome();        // undo what the first tap of this pair just did
+      // Named after the flip resolves, not before it. Announcing the camera we
+      // are about to ask for would still say "Back camera" on a phone that
+      // refused to give us one.
+      flipCamera().then(() => {
+        if (app.camera.live) flash(app.camera.isFrontFacing ? "Front camera" : "Back camera");
+      });
+      return;
+    }
+    lastTap = now;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    toggleChrome();
+  };
+
+  dom.stage.addEventListener("pointerup", end);
+  dom.stage.addEventListener("pointercancel", () => { from = null; });
+}
+
 /** Wipe the feedback history and reseed it from the live picture. */
 function reseed() {
   const seed = app.library.byName("None");
@@ -925,6 +1040,9 @@ function wire() {
   }
   dom.settingsOpen.addEventListener("click", () => openSheet(dom.settings));
   dom.settingsClose.addEventListener("click", () => closeSheet(dom.settings));
+  // The only way back from a wedged app once it is running from a home screen,
+  // where there is no address bar and no reload button.
+  dom.settingsReload.addEventListener("click", () => location.reload());
   dom.settings.addEventListener("click", (event) => {
     if (event.target === dom.settings) closeSheet(dom.settings);
   });
@@ -935,9 +1053,7 @@ function wire() {
     dom.controlbar.addEventListener(type, showChrome);
     dom.titlebar.addEventListener(type, showChrome);
   }
-  dom.stage.addEventListener("pointerdown", (event) => {
-    if (event.target === dom.canvas || event.target === dom.stage) toggleChrome();
-  });
+  wireStageGestures();
   dom.helpOpen.addEventListener("click", () => openSheet(dom.help));
   dom.helpClose.addEventListener("click", () => closeSheet(dom.help));
   dom.help.addEventListener("click", (event) => {

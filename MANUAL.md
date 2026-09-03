@@ -582,6 +582,51 @@ since documenting a key that does nothing is worse than not mentioning it.
 Installing to the home screen gets an iPhone the same result by another route:
 `display: standalone` launches with no browser chrome at all.
 
+**The picture is a control surface.** Swipe left or right to step through the
+effects in the active layer — the same thing `[` and `]` do — and double-tap to
+switch camera. Both are what a phone camera app has trained people to expect,
+and neither costs any screen.
+
+The awkward part is the overlap between a tap and the first half of a
+double-tap. The usual fix is to delay every tap by the double-tap window, but
+the tap here toggles the bars, which is the most frequent thing anyone does,
+and 300ms of lag on that to serve an occasional flip is the wrong trade. So the
+tap acts at once and a second tap flips the camera *and* toggles the bars back,
+cancelling what the first one did. CSS transitions interrupt and reverse
+smoothly, so the visible cost is the bars twitching a few pixels rather than a
+flash of the whole control bar.
+
+A swipe has to be decisively sideways — more than 45px, and at least 1.4× more
+horizontal than vertical — or every slightly diagonal drag towards the shutter
+would change the effect on the way. It fires once per swipe however far the
+finger keeps going, because a gesture that kept firing would race past whatever
+you were looking for. And anything starting within 24px of the left edge is
+ignored: that strip belongs to the browser's back gesture whatever this app
+thinks.
+
+**Gestures need somewhere to say what they did.** They are made with the bars
+folded, which is exactly when the readout that would name the effect is gone —
+so a swipe would change the picture with no word attached and you would be
+guessing what you landed on. `#flash` is that word. It is a prerequisite for
+the gestures rather than a decoration on them.
+
+The camera label is written *after* the flip resolves rather than before.
+Announcing the camera about to be asked for would still say "Back camera" on a
+phone that refused to give us one.
+
+**Reload, as a small link in the source sheet.** Installed to a home screen
+there is no address bar and therefore no reload button, so a wedged app can
+only be closed and reopened. It is styled as a link rather than a button and
+sits at the far end from Done, where a thumb reaching to close the sheet will
+not find it.
+
+Pull-to-refresh was considered and rejected. There is no scroll container in
+the app, so it would have to be built from scratch; this is not a feed, so
+there is nothing to re-fetch and the live picture is the most already-refreshed
+thing on screen; and it would spend a prominent gesture on "restart the app",
+which is rarely what anyone wants. The real need underneath it was the missing
+reload button, and that is what the link answers.
+
 **Hit targets and viewport units.** Everything in the transport row was drawn
 for a mouse — the stack buttons are 21px against a ~44px floor for a
 fingertip — so the sizes lift under `(pointer: coarse)` without touching the

@@ -66,6 +66,8 @@
               aria-label="Save a still"><svg class="i-cam" viewBox="0 0 24 24"><use href="#i-cam"/></svg></button>
     </div>
 
+    <div id="flash" aria-live="polite"></div>
+
     <div id="message">
       <div class="dialog">
         <p id="msg-title">Start the camera</p>
@@ -151,7 +153,10 @@
     <p>Which camera, and what to ask it for. The size is a request &mdash; the
        readout shows what you actually got.</p>
     <div id="settings-fields"></div>
-    <button id="settings-close" class="push">Done</button>
+    <div class="buttons">
+      <button id="settings-reload" class="quiet" title="Reload the whole app">Reload</button>
+      <button id="settings-close" class="push">Done</button>
+    </div>
   </div>
 </div>
 
@@ -171,6 +176,8 @@
       <tr><td>1 &ndash; 6</td><td>Edit that layer of the stack</td></tr>
       <tr><td>A / D</td><td>Add a layer above the active one / delete it</td></tr>
       <tr><td>, / .</td><td>Move the active layer down / up the stack</td></tr>
+      <tr class="touch-only"><td>Double-tap</td><td>Switch camera</td></tr>
+      <tr class="touch-only"><td>Swipe &larr; &rarr;</td><td>Previous / next effect</td></tr>
       <tr><td>M</td><td>Mirror horizontally</td></tr>
       <tr><td>R</td><td>Start / stop recording the output</td></tr>
       <tr><td>S</td><td>Save a still of the output</td></tr>

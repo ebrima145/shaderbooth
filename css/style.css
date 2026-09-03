@@ -305,6 +305,42 @@ body.maximised #btn-max .i-restore { display: block; }
   pointer-events: none;
 }
 
+/*
+ * What a gesture just did.
+ *
+ * Gestures are made with the bars folded, which is exactly when the readout
+ * that would normally name the effect is gone - so a swipe would change the
+ * picture with no word attached and you would be guessing what you landed on.
+ * This is that word. It is a prerequisite for the gestures rather than a
+ * decoration on them.
+ */
+#flash {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.96);
+  padding: 10px 18px;
+  border-radius: 6px;
+  background: rgba(8, 12, 22, 0.72);
+  color: #fff;
+  font: bold 15px Tahoma, sans-serif;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+}
+#flash.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+/* Claim the picture for gestures: without this a swipe can start a scroll or a
+   double-tap can zoom the page, and the app never sees either. */
+@media (pointer: coarse) {
+  #stage { touch-action: none; }
+}
+
 /* --- the overlay over the stage ------------------------------------------ */
 
 #message {
@@ -720,7 +756,22 @@ kbd {
 }
 #looks-list .drop:hover { border-color: #c08070; background: rgba(255, 255, 255, 0.8); }
 
-#looks .buttons { display: flex; gap: 8px; }
+#looks .buttons, #settings .buttons { display: flex; gap: 8px; align-items: center; }
+
+/* Reload is a way out of a wedged app, not something anyone came here to do -
+   so it reads as a link and sits at the far end from Done, where a thumb
+   reaching for "close this" will not find it. */
+.quiet {
+  margin-right: auto;
+  padding: 4px 2px;
+  border: none;
+  background: none;
+  font: 11px Tahoma, sans-serif;
+  color: #4a6180;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.quiet:hover { color: #10203c; }
 #looks-empty { margin-bottom: 14px; }
 
 /* --- fields -------------------------------------------------------------- */
@@ -1064,6 +1115,8 @@ input[type="range"]::-moz-range-thumb {
   border-bottom-width: 1px;
 }
 
+tr.touch-only { display: none; }
+
 /* --- touch --------------------------------------------------------------- */
 
 /*
@@ -1109,6 +1162,7 @@ input[type="range"]::-moz-range-thumb {
   /* Nothing to maximise: below 720px the window is already the whole screen,
      and the title bar needs that slot for the readout. */
   #btn-max { display: none; }
+  tr.touch-only { display: table-row; }
   .field { font-size: 13px; }
   .row { gap: 9px; }
 
