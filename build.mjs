@@ -149,6 +149,13 @@ async function main() {
     "window.SHADER_SOURCES = JSON.parse(" + jsString(JSON.stringify(shaders)) + ");\n\n"
     + bodies.map(([name, body]) => `/* ==== ${name} ==== */\n${body}`).join("\n");
 
+  // The single file travels alone, so the two links pointing at files beside it
+  // have to go. An apple-touch-icon that 404s is silent; a manifest that 404s is
+  // a console error on every load of a file whose whole appeal is that it just
+  // works when you open it. The inline SVG favicon travels fine.
+  html = html.replace(/\n *<link rel="apple-touch-icon"[^>]*>/, "")
+             .replace(/\n *<link rel="manifest"[^>]*>/, "");
+
   html = html.replace('<link rel="stylesheet" href="css/style.css">',
                       "<style>\n" + css + "\n</style>");
   html = html.replace('<script type="module" src="js/main.js"></script>',

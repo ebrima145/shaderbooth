@@ -71,6 +71,11 @@ It writes `dist/shaderbooth.html` (about 160 KB). It still has to be
 *served*, for the reason above — a single file is easier to move around, not a
 way out of needing HTTPS.
 
+**Add it to a home screen.** There is a manifest and a set of icons, so on a
+phone it installs from the browser's share sheet and launches without browser
+chrome. No service worker, deliberately — it needs the network on first load
+anyway, and a stale cache is a worse failure than a slow start.
+
 **A look is a link.** The stack lives in the URL, so
 `…/#VHS:0.7,Halftone:0.9&m=1` opens the page with that stack already built.
 Copy the address bar after you have built something and the person you send it
@@ -217,6 +222,8 @@ saves a still.
 | `js/recorder.js` | MediaRecorder for video, `toBlob` for stills |
 | `shaders/` | One `.frag` per effect, plus the shared preamble |
 | `build.mjs` | Folds the lot into one distributable HTML file |
+| `icon.mjs` | Draws the app icon and writes the PNGs a home screen needs |
+| `manifest.webmanifest` | Name, colours and icons, for Add to Home Screen |
 | `serve.mjs` | A local static server, so the page has a `localhost` origin |
 
 ## Adding an effect

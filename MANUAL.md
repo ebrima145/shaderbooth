@@ -21,6 +21,7 @@ This is everything else.
 - [The single-file build](#the-single-file-build)
 - [On a phone](#on-a-phone)
 - [On a desktop](#on-a-desktop)
+- [The icon](#the-icon)
 - [The dev server](#the-dev-server)
 - [Decisions worth keeping](#decisions-worth-keeping)
 - [Troubleshooting](#troubleshooting)
@@ -755,6 +756,51 @@ element that knows nothing about the drag. It is caught at the container in the
 capture phase instead, by a listener that removes itself after 250ms either way.
 A flag that outlived its click would silently eat the next real one, which is a
 bug that would surface much later and look like nothing to do with dragging.
+
+## The icon
+
+The mark is a camera iris: six blades around an opening, in the same Luna blue
+the caption uses, so the thing on your home screen and the thing in the title
+bar are one drawing.
+
+**The blades alternate between two tones rather than one tone at two
+opacities.** That was the first version, and at 40px — which is what a home
+screen actually gives you — a blade at 55% over blue and a blade at 100% over
+blue are close enough in value to merge, and the whole mark collapses into a
+pale blob. Two explicit tones keep the blade structure legible all the way
+down. It is the same shape either way; only the contrast changed.
+
+**`icon.mjs` is the only place the mark exists.** It writes the four PNGs and
+prints the SVG that serves as the inline favicon, so changing a number and
+re-running moves the whole set together. An icon redrawn by hand at four sizes
+is an icon that ends up subtly different at four sizes.
+
+It rasterises by hand, in Node stdlib. Every shape in the mark is a triangle, a
+circle or a rounded rectangle, so each pixel can simply be asked which of them
+it is inside; sampling 4×4 within each pixel is what gives the edges their
+smoothness, since there is no antialiasing to inherit when nothing is drawing
+but you. PNG comes out of `zlib` — the format is a handful of length-prefixed
+chunks with CRC32s, which is a smaller and more durable thing to own than a
+dependency that rasterises SVG.
+
+One bug worth recording, because it was invisible in the numbers and obvious on
+screen: the corner radius was being scaled to the output size, but the
+rasteriser maps every pixel back into the 128-unit design box before sampling,
+so it was scaled twice. At 512 that made the radius 112 in a box 128 across,
+the corner clamp inverted, and a quarter of the icon simply vanished. The
+180px file looked merely a bit over-rounded, which is the kind of wrong that
+ships.
+
+**The maskable icon is squared off on purpose.** Android applies its own mask,
+and a rounded tile inside that mask gets its corners clipped twice. The mark
+sits well inside the safe circle either way.
+
+**There is a manifest but no service worker.** The manifest is what makes Add
+to Home Screen give you a real icon and a chrome-free launch, and it cannot go
+stale. A service worker could make the app work offline, but this app needs the
+network on first load regardless, and a cache serving last week's build is a
+worse failure than a slow start. If offline ever matters more than that, it is
+a separate decision made on purpose.
 
 ## The dev server
 

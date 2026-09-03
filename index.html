@@ -6,12 +6,15 @@
 <title>Shaderbooth</title>
 <meta name="description" content="A webcam viewer with 34 stackable real-time GLSL effects, in the browser.">
 <meta name="theme-color" content="#0054e3">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%230054e3'/><circle cx='8' cy='8' r='3.4' fill='%23eaf2ff'/><circle cx='8' cy='8' r='1.6' fill='%230054e3'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='s' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='rgb(53,147,255)'/><stop offset='0.22' stop-color='rgb(0,87,229)'/><stop offset='1' stop-color='rgb(0,61,215)'/></linearGradient></defs><rect width='128' height='128' rx='28' fill='url(%23s)'/><path d='M104.0 64.0L84.0 98.6L69.6 73.7Z' fill='rgb(238,244,255)'/><path d='M84.0 98.6L44.0 98.6L58.4 73.7Z' fill='rgb(138,184,255)'/><path d='M44.0 98.6L24.0 64.0L52.8 64.0Z' fill='rgb(238,244,255)'/><path d='M24.0 64.0L44.0 29.4L58.4 54.3Z' fill='rgb(138,184,255)'/><path d='M44.0 29.4L84.0 29.4L69.6 54.3Z' fill='rgb(238,244,255)'/><path d='M84.0 29.4L104.0 64.0L75.2 64.0Z' fill='rgb(138,184,255)'/><circle cx='64' cy='64' r='10' fill='rgb(0,61,215)'/></svg>">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <svg id="icons" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-iris" viewBox="0 0 128 128"><defs><linearGradient id="iris-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgb(53,147,255)"/><stop offset="0.22" stop-color="rgb(0,87,229)"/><stop offset="1" stop-color="rgb(0,61,215)"/></linearGradient></defs><rect width="128" height="128" rx="28" fill="url(#iris-sky)"/><path d="M104.0 64.0L84.0 98.6L69.6 73.7Z" fill="rgb(238,244,255)"/><path d="M84.0 98.6L44.0 98.6L58.4 73.7Z" fill="rgb(138,184,255)"/><path d="M44.0 98.6L24.0 64.0L52.8 64.0Z" fill="rgb(238,244,255)"/><path d="M24.0 64.0L44.0 29.4L58.4 54.3Z" fill="rgb(138,184,255)"/><path d="M44.0 29.4L84.0 29.4L69.6 54.3Z" fill="rgb(238,244,255)"/><path d="M84.0 29.4L104.0 64.0L75.2 64.0Z" fill="rgb(138,184,255)"/><circle cx="64" cy="64" r="10" fill="rgb(0,61,215)"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8.9 5.3 19.3 12 8.9 18.7Z"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><rect x="8.3" y="5.6" width="3.1" height="12.8" rx=".9"/><rect x="12.9" y="5.6" width="3.1" height="12.8" rx=".9"/></symbol>
   <symbol id="i-prev" viewBox="0 0 24 24"><rect x="6.5" y="5.6" width="2.3" height="12.8" rx=".8"/><path d="M18.6 5.8v12.4L9.9 12Z"/></symbol>
@@ -40,7 +43,7 @@
 <div id="app">
 
   <div id="titlebar">
-    <span id="title-icon" aria-hidden="true"></span>
+    <span id="title-icon" aria-hidden="true"><svg viewBox="0 0 128 128"><use href="#i-iris"/></svg></span>
     <span id="title-text">Shaderbooth</span>
     <span id="title-status">starting&hellip;</span>
     <span id="title-buttons">
