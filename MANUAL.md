@@ -650,14 +650,38 @@ thing from fullscreen rather than a duplicate of it. The state is remembered in
 its own storage key, deliberately apart from the look: how big your window is
 says nothing about the picture and has no business in a shared link.
 
-**Fullscreen folds the bars away.** The machinery already existed for phones
-and was gated on touch; it now also opens in fullscreen, which is the one time
-someone has said in as many words that they want the picture and nothing else.
-A window that hid its own controls while sitting on a desktop would just be
-losing them. Moving the mouse is the desktop equivalent of tapping the picture,
+**Fullscreen folds the bars away, immediately.** The machinery already existed
+for phones and was gated on touch; it now also opens in fullscreen, which is
+the one time someone has said in as many words that they want the picture and
+nothing else. A window that hid its own controls while sitting on a desktop
+would just be losing them.
+
+On a phone the fold is ambient and the idle wait is right. In fullscreen it is
+a command, so the bars go the instant you enter rather than three and a half
+seconds later — making someone hold still to get what they just asked for is
+answering a question they did not ask. That was the first version and it was
+wrong: any mouse movement in those seconds reset the timer, so in practice the
+bars often never went at all.
+
+Revealing is blocked for 700ms after entering, because the pointer is almost
+always moving at that moment — you have just clicked the button, or your hand
+is still on the mouse — and without it the bars fold and snap straight back.
+After that, moving the mouse is the desktop equivalent of tapping the picture,
 throttled to twice a second because `pointermove` fires per pixel and each call
 resets a timer. The floating shutter comes along, so a fullscreen session is
 still able to capture without bringing anything back.
+
+**And the picture fills the screen there.** `object-fit: contain` is the honest
+default everywhere else — you see exactly the frame that gets recorded, and the
+leftover letterboxes. But a 16:9 camera on a 16:10 laptop still shows bars with
+the chrome gone, and someone who pressed `F` asked for the screen filled, not
+for an accurate preview of an aspect ratio they cannot change. So fullscreen
+uses `cover`.
+
+The crop is display only. The canvas is still the camera's own resolution and
+the recording is still the whole frame, so a take made in fullscreen contains
+slightly more than was on screen. That is the right way round — better to
+record more than you framed than less — but it is worth knowing.
 
 **Layer tabs drag.** Order is what this app is about, and rearranging it used to
 mean selecting a tab and then clicking an arrow — two steps for the interaction

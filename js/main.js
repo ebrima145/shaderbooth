@@ -102,6 +102,9 @@ const app = {
   warnedSlow: false,
   idleTimer: 0,
   unpinTimer: 0,
+  // Mouse movement reveals the bars, but not in the instant right after
+  // entering fullscreen - see the fullscreenchange handler.
+  revealBlockedUntil: 0,
 };
 
 // How long the bars wait after your last touch before folding away. Long
@@ -728,9 +731,27 @@ function wire() {
     setMaximised(!document.body.classList.contains("maximised"));
   });
 
-  // Entering or leaving fullscreen changes whether the bars may fold at all,
-  // so both directions have to put them back and re-arm from scratch.
-  document.addEventListener("fullscreenchange", showChrome);
+  /*
+   * Entering fullscreen folds the bars at once rather than after the idle
+   * wait. Pressing F is already someone saying, in as many words, that they
+   * want the picture and nothing else - making them then hold still for three
+   * and a half seconds to get it is answering a question they did not ask. On
+   * a phone the fold is ambient and a delay is right; here it is a command.
+   *
+   * The short block on revealing exists because the pointer is almost always
+   * moving at that moment - you have just clicked the button, or your hand is
+   * still on the mouse - and without it the bars would fold and snap straight
+   * back.
+   */
+  document.addEventListener("fullscreenchange", () => {
+    const entering = !!document.fullscreenElement;
+    if (entering && app.camera.live && dom.help.hidden && dom.settings.hidden) {
+      app.revealBlockedUntil = performance.now() + 700;
+      hideChrome();
+    } else {
+      showChrome();
+    }
+  });
 
   // On a desktop the equivalent of tapping the picture is simply moving the
   // mouse. Throttled, because pointermove fires per pixel and showChrome
@@ -739,6 +760,7 @@ function wire() {
     let lastMove = 0;
     window.addEventListener("pointermove", () => {
       if (!chromeCanFold()) return;
+      if (performance.now() < app.revealBlockedUntil) return;
       if (chromeHidden()) return showChrome();
       const now = performance.now();
       if (now - lastMove < 500) return;

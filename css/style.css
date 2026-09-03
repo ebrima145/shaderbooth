@@ -821,6 +821,28 @@ input[type="range"]::-moz-range-thumb {
 }
 #app:fullscreen #titlebar::after { border-radius: 0; }
 
+/*
+ * In fullscreen the picture fills the screen rather than fitting inside it.
+ *
+ * "Contain" is the honest default everywhere else - you see exactly the frame
+ * that gets recorded, and the leftover letterboxes. But a 16:9 camera on a
+ * 16:10 laptop still shows bars with the chrome gone, and someone who pressed
+ * F asked for the screen filled, not for an accurate preview of an aspect
+ * ratio they cannot change.
+ *
+ * The crop is display only. The canvas is still the camera's own resolution
+ * and the recording is still the whole frame, so a take made in fullscreen
+ * contains slightly more than was on screen - which is the right way round,
+ * but worth knowing.
+ */
+#app:fullscreen #output {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+}
+
 /* --- small screens ------------------------------------------------------- */
 
 @media (max-width: 720px) {
