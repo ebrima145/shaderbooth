@@ -102,9 +102,6 @@ const app = {
   warnedSlow: false,
   idleTimer: 0,
   unpinTimer: 0,
-  // Mouse movement reveals the bars, but not in the instant right after
-  // entering fullscreen - see the fullscreenchange handler.
-  revealBlockedUntil: 0,
 };
 
 // How long the bars wait after your last touch before folding away. Long
@@ -738,35 +735,48 @@ function wire() {
    * and a half seconds to get it is answering a question they did not ask. On
    * a phone the fold is ambient and a delay is right; here it is a command.
    *
-   * The short block on revealing exists because the pointer is almost always
-   * moving at that moment - you have just clicked the button, or your hand is
-   * still on the mouse - and without it the bars would fold and snap straight
-   * back.
    */
   document.addEventListener("fullscreenchange", () => {
     const entering = !!document.fullscreenElement;
     if (entering && app.camera.live && dom.help.hidden && dom.settings.hidden) {
-      app.revealBlockedUntil = performance.now() + 700;
       hideChrome();
     } else {
       showChrome();
     }
   });
 
-  // On a desktop the equivalent of tapping the picture is simply moving the
-  // mouse. Throttled, because pointermove fires per pixel and showChrome
-  // resets a timer.
+  /*
+   * Moving the mouse deliberately does NOT bring the bars back.
+   *
+   * It did, which is how a video player behaves - and it was wrong here for a
+   * reason specific to this layout. The bars are in flow, so revealing them
+   * shrinks the stage, which moves the floating shutter that sits against its
+   * bottom edge. Reaching for record therefore summoned the bars and slid the
+   * button out from under the pointer on the way. The one gesture that had to
+   * work in fullscreen was the one the reveal broke.
+   *
+   * So in fullscreen the bars stay down, and record and still stay reachable
+   * on their own. Clicking the picture is the way back, which is deliberate
+   * rather than incidental, and every key still works throughout.
+   *
+   * Hovering the bars while they *are* up keeps them up, so they cannot fold
+   * out from under a hand on its way to a control. Throttled, because
+   * pointermove fires per pixel and each call resets a timer.
+   */
   if (!TOUCH) {
-    let lastMove = 0;
-    window.addEventListener("pointermove", () => {
-      if (!chromeCanFold()) return;
-      if (performance.now() < app.revealBlockedUntil) return;
-      if (chromeHidden()) return showChrome();
+    let lastHover = 0;
+    const keepUp = () => {
+      // Hold an open bar, never reopen a folded one. A collapsed bar is zero
+      // pixels tall and cannot be hovered in practice, but saying so here is
+      // what stops this from quietly becoming the reveal-on-move it replaced.
+      if (chromeHidden()) return;
       const now = performance.now();
-      if (now - lastMove < 500) return;
-      lastMove = now;
+      if (now - lastHover < 400) return;
+      lastHover = now;
       showChrome();
-    });
+    };
+    dom.controlbar.addEventListener("pointermove", keepUp);
+    dom.titlebar.addEventListener("pointermove", keepUp);
   }
   dom.settingsOpen.addEventListener("click", () => openSheet(dom.settings));
   dom.settingsClose.addEventListener("click", () => closeSheet(dom.settings));

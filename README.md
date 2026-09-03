@@ -118,9 +118,10 @@ saves a still.
   expressive range, and it was two steps before. The scroll wheel works over
   the Amount slider. **Maximise** is the middle caption button; `F` is
   fullscreen. Entering fullscreen folds the bars at once and fills the screen
-  with the picture — moving the mouse brings them back. Filling means cropping
-  rather than letterboxing, and the crop is display only: the recording is
-  always the whole camera frame.
+  with the picture; **record and still stay floating over it**, and moving the
+  mouse does *not* bring the bars back. Click the picture when you want them,
+  or press `Esc`. Filling means cropping rather than letterboxing, and the crop
+  is display only: the recording is always the whole camera frame.
 
 - **`file://` will never work.** See above. This is the single most common way
   to conclude the app is broken when it isn't.

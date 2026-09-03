@@ -663,13 +663,26 @@ answering a question they did not ask. That was the first version and it was
 wrong: any mouse movement in those seconds reset the timer, so in practice the
 bars often never went at all.
 
-Revealing is blocked for 700ms after entering, because the pointer is almost
-always moving at that moment — you have just clicked the button, or your hand
-is still on the mouse — and without it the bars fold and snap straight back.
-After that, moving the mouse is the desktop equivalent of tapping the picture,
-throttled to twice a second because `pointermove` fires per pixel and each call
-resets a timer. The floating shutter comes along, so a fullscreen session is
-still able to capture without bringing anything back.
+**Moving the mouse does not bring them back**, and that is the part worth
+explaining, because it is the opposite of how a video player behaves.
+
+It did at first, copied straight from every video player. It was wrong here for
+a reason specific to this layout: the bars are in flow, so revealing them
+shrinks the stage, which moves the floating shutter sitting against its bottom
+edge. Reaching for record therefore summoned the bars *and slid the button out
+from under the pointer on the way*. The one gesture that had to keep working in
+fullscreen was the one the reveal broke.
+
+So the bars stay down, and record and still stay reachable on their own —
+floating over the picture, in a fixed place, not going anywhere. Clicking the
+picture is the way back, which is deliberate rather than incidental, and every
+keyboard shortcut works throughout regardless.
+
+Hovering the bars while they *are* up keeps them up, so they cannot fold out
+from under a hand on its way to a control. That listener holds an open bar and
+never reopens a folded one — a collapsed bar is zero pixels tall and cannot be
+hovered in practice, but saying so explicitly is what stops it quietly becoming
+the reveal-on-move it replaced.
 
 **And the picture fills the screen there.** `object-fit: contain` is the honest
 default everywhere else — you see exactly the frame that gets recorded, and the
