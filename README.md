@@ -89,6 +89,15 @@ Intensity means something different in each effect. It is wired to whatever
 knob actually matters for that one, not to a blend against the original: it is
 Posterize's level count, VHS's tape wear, Kaleidoscope's segment count.
 
+The dice builds a **random stack** — two to four effects, no repeats, at most
+one of the expensive ones, and amounts jittered around each effect's own
+default so everything still arrives looking like itself. It is the fastest way
+to find a combination you would not have thought to try.
+
+The star in the title bar is **saved looks**. A look is the whole stack, every
+layer and its amount; the address bar always holds the current one, so a link
+carries a look too — this is for the ones worth coming back to.
+
 The red button records the **output** — the last layer's picture, at the
 camera's own resolution, with no chrome over it. The camera button beside it
 saves a still.
@@ -109,6 +118,7 @@ saves a still.
 | `M` | Mirror horizontally |
 | `R` | Start / stop recording the output |
 | `S` | Save a still of the output |
+| `X` | Build a random stack |
 | `F` | Fullscreen |
 | `Esc` | Close the help panel, or leave fullscreen |
 

@@ -654,6 +654,72 @@ kbd {
 }
 .tiny:disabled { opacity: 0.4; cursor: default; }
 
+/* The stack buttons were the last font characters in the interface - the
+   arrows in particular, which are exactly the sort of glyph a substituted font
+   renders at the wrong weight or off-centre. */
+.tiny svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* --- saved looks ---------------------------------------------------------- */
+
+#looks-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+#looks-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.09);
+}
+#looks-list li:last-child { border-bottom: 1px solid rgba(0, 0, 0, 0.09); }
+
+/* The name is the button: the whole row is the target, because picking a look
+   is the thing you came here to do and it should not need aim. */
+#looks-list .recall {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 7px 6px;
+  border: none;
+  background: none;
+  font: 11px Tahoma, sans-serif;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#looks-list .recall:hover { background: rgba(255, 255, 255, 0.75); }
+#looks-list .drop {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: none;
+  color: #8a3020;
+  font: bold 13px Tahoma, sans-serif;
+  line-height: 1;
+  cursor: pointer;
+}
+#looks-list .drop:hover { border-color: #c08070; background: rgba(255, 255, 255, 0.8); }
+
+#looks .buttons { display: flex; gap: 8px; }
+#looks-empty { margin-bottom: 14px; }
+
 /* --- fields -------------------------------------------------------------- */
 
 .field {
@@ -769,7 +835,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* --- help ---------------------------------------------------------------- */
 
-#help, #settings {
+#help, #settings, #looks {
   position: fixed;
   inset: 0;
   display: flex;
@@ -780,9 +846,9 @@ input[type="range"]::-moz-range-thumb {
   z-index: 10;
   animation: fade-in 180ms var(--ease) both;
 }
-#help[hidden], #settings[hidden] { display: none; }
+#help[hidden], #settings[hidden], #looks[hidden] { display: none; }
 
-#help .panel, #settings .panel {
+#help .panel, #settings .panel, #looks .panel {
   width: min(440px, 100%);
   max-height: 100%;
   overflow: auto;
@@ -794,8 +860,8 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.55;
   animation: dialog-in 240ms var(--ease) both;
 }
-#help h2, #settings h2 { margin: 0 0 8px; font-size: 14px; color: #0b3f8f; }
-#help p, #settings p { margin: 0 0 10px; }
+#help h2, #settings h2, #looks h2 { margin: 0 0 8px; font-size: 14px; color: #0b3f8f; }
+#help p, #settings p, #looks p { margin: 0 0 10px; }
 #help table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
 #help td { padding: 3px 6px; vertical-align: top; }
 #help td:first-child {
@@ -1053,6 +1119,9 @@ input[type="range"]::-moz-range-thumb {
   input[type="range"]::-webkit-slider-thumb { width: 20px; height: 30px; margin-top: -12.5px; }
   input[type="range"]::-moz-range-thumb { width: 20px; height: 30px; }
   .cap { width: 34px; height: 30px; font-size: 14px; }
+  /* Nothing to maximise: below 720px the window is already the whole screen,
+     and the title bar needs that slot for the readout. */
+  #btn-max { display: none; }
   .field { font-size: 13px; }
   .row { gap: 9px; }
 

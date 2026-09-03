@@ -12,6 +12,7 @@ This is everything else.
 - [The control bar](#the-control-bar)
 - [Effects](#effects)
 - [Stacking effects](#stacking-effects)
+- [Shuffle, and saved looks](#shuffle-and-saved-looks)
 - [Looks as links](#looks-as-links)
 - [Recording](#recording)
 - [Writing your own effect](#writing-your-own-effect)
@@ -241,6 +242,34 @@ The cost is real and is why there is a cap: six layers is six full-resolution
 passes per frame and twelve extra textures. That is nothing much at 1080p on a
 discrete GPU, but it is not free, and past six another pass stops reading as a
 deliberate choice.
+
+## Shuffle, and saved looks
+
+**The dice builds a random stack**, with just enough taste to be worth pressing
+twice. Not uniformly random: the pass-through is excluded, because a layer of
+nothing is not a surprise; no effect appears twice in one stack; and at most one
+of the three marked `(heavy)` gets in, because six passes of Kuwahara is not a
+look, it is a slideshow. Two to four layers — one is barely a stack and five is
+usually mud.
+
+Amounts are jittered around each effect's *own default* rather than drawn across
+the whole range, so every effect still arrives looking like itself. That is the
+difference between a surprise and noise.
+
+**Saved looks** are the same encoded string the URL uses, kept in a list. The
+address bar already holds the current look and a link already carries one —
+that is genuinely most of the feature, and it is why this stays small. What a
+link cannot do is let you keep half a dozen and flick between them, which is
+the difference between a toy and something you work in.
+
+They are named from the chain rather than by asking. A prompt for a name is a
+question most people answer with "asdf", and `VHS > Bloom > Halftone` says more
+about a look than any name someone types in a hurry. Newest first, capped at
+twelve, so the list stays a list rather than becoming an archive nobody reads.
+
+Because a saved look and a shared look are the same object, neither can drift
+from the other: anything that can be linked can be saved, and the encoding only
+has to be right once.
 
 ## Looks as links
 

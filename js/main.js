@@ -54,6 +54,13 @@ const dom = {
   del: el("btn-del"),
   down: el("btn-down"),
   up: el("btn-up"),
+  shuffle: el("btn-shuffle"),
+  looks: el("looks"),
+  looksList: el("looks-list"),
+  looksEmpty: el("looks-empty"),
+  looksOpen: el("btn-looks"),
+  looksSave: el("looks-save"),
+  looksClose: el("looks-close"),
   full: el("btn-full"),
   max: el("btn-max"),
   titlebar: el("titlebar"),
@@ -72,6 +79,10 @@ const STORE_KEY = "shaderbooth";
 // Kept apart from the look, which travels in the URL: how big your window
 // is says nothing about the picture and has no business in a shared link.
 const WINDOW_KEY = "shaderbooth-window";
+const LOOKS_KEY = "shaderbooth-looks";
+// Enough to keep the ones worth keeping, few enough that the list stays a
+// list rather than an archive nobody reads.
+const MAX_LOOKS = 12;
 
 /*
  * Whether the primary input is a finger.
@@ -199,6 +210,118 @@ function applyLook(look) {
   });
   app.chain.active = 0;
   if (look.mirror !== null) app.renderer.mirror = look.mirror;
+}
+
+/*
+ * Saved looks.
+ *
+ * The address bar already holds the current one, and a link carries it - that
+ * is genuinely most of the feature, and it is why this stays small. What a
+ * link cannot do is let you keep six of them and flick between them, which is
+ * the difference between a toy and something you work in.
+ *
+ * Stored as the same encoded string the URL uses, so a saved look and a shared
+ * look are the same object and neither can drift from the other.
+ *
+ * Named from the chain rather than by asking. A prompt for a name is a
+ * question most people answer with "asdf", and "VHS > Bloom > Halftone" says
+ * more about the look than any name someone would type in a hurry.
+ */
+function readLooks() {
+  try { return JSON.parse(localStorage.getItem(LOOKS_KEY)) || []; } catch { return []; }
+}
+
+function writeLooks(list) {
+  try { localStorage.setItem(LOOKS_KEY, JSON.stringify(list)); } catch { /* see loadLook */ }
+}
+
+function saveCurrentLook() {
+  const list = readLooks();
+  list.unshift({
+    name: app.chain.describe(),
+    look: encodeLook(app.chain, app.renderer.mirror),
+  });
+  writeLooks(list.slice(0, MAX_LOOKS));
+  buildLooks();
+  toast("look saved", 2);
+}
+
+function buildLooks() {
+  const list = readLooks();
+  dom.looksList.innerHTML = "";
+  dom.looksEmpty.hidden = list.length > 0;
+
+  list.forEach((entry, index) => {
+    const row = document.createElement("li");
+
+    const recall = document.createElement("button");
+    recall.className = "recall";
+    recall.textContent = entry.name;
+    recall.title = "Use this look";
+    recall.addEventListener("click", () => {
+      applyLook(decodeLook(entry.look));
+      reseed();
+      refresh();
+      closeSheet(dom.looks);
+    });
+
+    const drop = document.createElement("button");
+    drop.className = "drop";
+    drop.textContent = "\u00d7";
+    drop.title = "Forget this look";
+    drop.setAttribute("aria-label", "Forget " + entry.name);
+    drop.addEventListener("click", () => {
+      const kept = readLooks();
+      kept.splice(index, 1);
+      writeLooks(kept);
+      buildLooks();
+    });
+
+    row.append(recall, drop);
+    dom.looksList.appendChild(row);
+  });
+}
+
+/*
+ * A random stack, with just enough taste to be worth pressing twice.
+ *
+ * Not uniformly random: the pass-through is excluded because a layer of
+ * nothing is not a surprise, no effect appears twice in one stack, and at most
+ * one of the expensive three gets in - six passes of Kuwahara is not a look,
+ * it is a slideshow. Two to four layers, because one is barely a stack and
+ * five is usually mud.
+ *
+ * Amounts are jittered around each effect's own default rather than picked
+ * across the whole range, so every effect still arrives looking like itself.
+ */
+function surprise() {
+  const pool = app.library.effects.filter((e) => e.ok && e.name !== "None");
+  if (!pool.length) return;
+
+  const depth = 2 + Math.floor(Math.random() * (TOUCH ? 2 : 3));
+  const picked = [];
+  let heavy = 0;
+
+  for (let tries = 0; tries < 200 && picked.length < depth; tries++) {
+    const effect = pool[Math.floor(Math.random() * pool.length)];
+    if (picked.includes(effect)) continue;
+    if (HEAVY.has(effect.name)) {
+      if (heavy) continue;
+      heavy += 1;
+    }
+    picked.push(effect);
+  }
+  if (!picked.length) return;
+
+  app.chain = new EffectChain(app.library, picked.map((e) => e.name));
+  for (const layer of app.chain.layers) {
+    const spread = (Math.random() - 0.5) * 0.4;
+    layer.amount = Math.max(0.1, Math.min(1, layer.effect.defaultAmount + spread));
+  }
+  app.chain.active = app.chain.layers.length - 1;
+  reseed();
+  refresh();
+  toast(app.chain.describe(), 3);
 }
 
 // --- widgets ----------------------------------------------------------------
@@ -386,9 +509,10 @@ function showChrome() {
   // Only ever armed on a phone, and only with a picture worth uncovering. A
   // dialog counts as being mid-task, so the bars stay put behind it.
   if (!chromeCanFold() || !app.camera.live) return;
-  if (!dom.help.hidden || !dom.settings.hidden) return;
+  if (!dom.help.hidden || !dom.settings.hidden || !dom.looks.hidden) return;
   app.idleTimer = setTimeout(() => {
-    if (dom.help.hidden && dom.settings.hidden && app.camera.live) hideChrome();
+    if (dom.help.hidden && dom.settings.hidden && dom.looks.hidden
+        && app.camera.live) hideChrome();
   }, CHROME_IDLE_MS);
 }
 
@@ -714,6 +838,15 @@ function wire() {
   dom.down.addEventListener("click", () => editStack(() => app.chain.move(-1)));
   dom.up.addEventListener("click", () => editStack(() => app.chain.move(1)));
 
+  dom.shuffle.addEventListener("click", surprise);
+
+  dom.looksOpen.addEventListener("click", () => { buildLooks(); openSheet(dom.looks); });
+  dom.looksClose.addEventListener("click", () => closeSheet(dom.looks));
+  dom.looksSave.addEventListener("click", saveCurrentLook);
+  dom.looks.addEventListener("click", (event) => {
+    if (event.target === dom.looks) closeSheet(dom.looks);
+  });
+
   dom.rec.addEventListener("click", toggleRecording);
   dom.snap.addEventListener("click", takeSnapshot);
 
@@ -738,7 +871,8 @@ function wire() {
    */
   document.addEventListener("fullscreenchange", () => {
     const entering = !!document.fullscreenElement;
-    if (entering && app.camera.live && dom.help.hidden && dom.settings.hidden) {
+    if (entering && app.camera.live && dom.help.hidden && dom.settings.hidden
+        && dom.looks.hidden) {
       hideChrome();
     } else {
       showChrome();
@@ -873,7 +1007,8 @@ function onKey(event) {
   const key = event.key;
 
   if (key === "Escape") {
-    if (!dom.settings.hidden) closeSheet(dom.settings);
+    if (!dom.looks.hidden) closeSheet(dom.looks);
+    else if (!dom.settings.hidden) closeSheet(dom.settings);
     else if (!dom.help.hidden) closeSheet(dom.help);
     else if (document.fullscreenElement) document.exitFullscreen();
     else document.activeElement?.blur?.();
@@ -912,6 +1047,8 @@ function onKey(event) {
     toggleRecording();
   } else if (key === "s" || key === "S") {
     takeSnapshot();
+  } else if (key === "x" || key === "X") {
+    surprise();
   } else if (key === "f" || key === "F") {
     toggleFullscreen();
   } else {
