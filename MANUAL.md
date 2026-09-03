@@ -846,6 +846,18 @@ button goes from dark red to bright without a second gradient.
 
 The camera is a solid silhouette with the lens knocked out through
 `fill-rule="evenodd"`, so the button's own gradient shows through the barrel.
+The die does the same with its pips — drawn as an outline with filled dots they
+came out 0.8 device pixels across and vanished.
+
+**Stroke weights are per-size, because a viewBox halves them.** The caption
+glyphs are drawn in the same 24-unit box as everything else but rendered at
+12px, so a `stroke-width` of 1.8 lands as 0.9 device pixels and reads as a
+smudge on the blue. They carry their own heavier weights — 2.4 for the window
+shapes, 2.8 for the fullscreen corners — set as attributes on the symbol rather
+than in CSS, so the weight travels with the drawing.
+
+The star is filled with no stroke at all. Outlining a filled shape at 12px only
+fattens it unevenly, which is what made it read as a blob rather than a star.
 
 **`[hidden]` has to outrank layout.** A UA stylesheet only says
 `[hidden] { display: none }`, which any author rule beats — so giving `.round` a

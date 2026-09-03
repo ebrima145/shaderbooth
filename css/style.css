@@ -1014,22 +1014,6 @@ input[type="range"]::-moz-range-thumb {
 }
 #settings-fields .field > span { width: 4.5em; }
 
-/* Three dots, drawn rather than typed - the gear and ellipsis characters both
-   render as full-colour emoji on some platforms, which would be the only
-   emoji in the interface. */
-.cap.dots { position: relative; }
-.cap.dots::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 -5px 0 #fff, 0 5px 0 #fff;
-}
-
 /* --- chrome that gets out of the way ------------------------------------- */
 
 /*
