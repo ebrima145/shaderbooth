@@ -743,7 +743,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* --- help ---------------------------------------------------------------- */
 
-#help {
+#help, #settings {
   position: fixed;
   inset: 0;
   display: flex;
@@ -754,9 +754,9 @@ input[type="range"]::-moz-range-thumb {
   z-index: 10;
   animation: fade-in 180ms var(--ease) both;
 }
-#help[hidden] { display: none; }
+#help[hidden], #settings[hidden] { display: none; }
 
-#help .panel {
+#help .panel, #settings .panel {
   width: min(440px, 100%);
   max-height: 100%;
   overflow: auto;
@@ -768,8 +768,8 @@ input[type="range"]::-moz-range-thumb {
   line-height: 1.55;
   animation: dialog-in 240ms var(--ease) both;
 }
-#help h2 { margin: 0 0 8px; font-size: 14px; color: #0b3f8f; }
-#help p { margin: 0 0 10px; }
+#help h2, #settings h2 { margin: 0 0 8px; font-size: 14px; color: #0b3f8f; }
+#help p, #settings p { margin: 0 0 10px; }
 #help table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
 #help td { padding: 3px 6px; vertical-align: top; }
 #help td:first-child {
@@ -822,6 +822,90 @@ input[type="range"]::-moz-range-thumb {
      as a status bar rather than as something that fell off the end. */
   #readout { flex: 1 1 100%; margin-left: 0; min-width: 0; }
   .field, .field.narrow { flex: 1 1 100%; }
+}
+
+/* --- the source sheet ---------------------------------------------------- */
+
+/*
+ * Camera and Size live in here on a phone.
+ *
+ * They are set-once controls sitting next to two that get touched constantly,
+ * and on a narrow screen each was costing a full 38px row - 76px of permanent
+ * screen, about a tenth of the viewport, to hold two things nobody changes
+ * twice in a session. The fields are *moved* here rather than duplicated, so
+ * there is still exactly one Camera select in the document with exactly one
+ * listener on it.
+ */
+#settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+#settings-fields .field {
+  flex: 1 1 auto;
+  color: var(--bar-text);
+  text-shadow: none;
+}
+#settings-fields .field > span { width: 4.5em; }
+
+/* Three dots, drawn rather than typed - the gear and ellipsis characters both
+   render as full-colour emoji on some platforms, which would be the only
+   emoji in the interface. */
+.cap.dots { position: relative; }
+.cap.dots::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 -5px 0 #fff, 0 5px 0 #fff;
+}
+
+/* --- chrome that gets out of the way ------------------------------------- */
+
+/*
+ * On a phone the bars are collapsed a few seconds after you stop touching
+ * them, and a tap on the picture brings them back. Between the title bar and
+ * the control bar they were taking 47% of a 812px screen, which is a lot of
+ * furniture around the one thing the app is for.
+ *
+ * Collapsed with max-height rather than by translating a floating bar, so the
+ * bands stay in flow and the picture *grows* into the space instead of being
+ * covered by chrome sitting on top of it. That needs a real number to animate
+ * from - max-height has nothing to interpolate against `none` - so main.js
+ * measures the bar and publishes it as --chrome-h whenever the stack changes.
+ */
+#titlebar, #controlbar {
+  overflow: hidden;
+  transition: max-height 300ms var(--ease), opacity 220ms var(--ease),
+              padding 300ms var(--ease);
+}
+#controlbar { max-height: var(--chrome-h, 60vh); }
+#titlebar { max-height: 40px; }
+
+/* Padding has to go too. Under border-box a max-height of 0 collapses the
+   content box but cannot eat the padding, which left a 16px strip of blue
+   along the bottom of the screen looking like a rendering fault. */
+#app.chrome-hidden #titlebar,
+#app.chrome-hidden #controlbar {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  border-width: 0;
+}
+
+/* A take in progress keeps its title bar: on a phone that is where the tally
+   and the running clock live, and hiding "you are still recording" to show
+   more of the picture is the one trade this should never make. */
+#app.chrome-hidden.recording #titlebar {
+  max-height: 40px;
+  opacity: 1;
+  border-bottom-width: 1px;
 }
 
 /* --- touch --------------------------------------------------------------- */
@@ -895,6 +979,24 @@ input[type="range"]::-moz-range-thumb {
   .cap { width: 34px; height: 30px; font-size: 14px; }
   .field { font-size: 13px; }
   .row { gap: 9px; }
+
+  /* The readout moves into the title bar, which was showing the effect chain -
+     something the tab strip now spells out in full a few pixels below. Trading
+     the duplicate for the resolution and the running clock frees the readout's
+     own row and costs nothing. */
+  #titlebar #readout {
+    flex: 0 1 auto;
+    margin: 0 4px 0 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 3px 7px;
+  }
+  #title-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 /* --- motion -------------------------------------------------------------- */

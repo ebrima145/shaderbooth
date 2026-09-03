@@ -549,6 +549,45 @@ a tap in case it becomes a double-tap zoom. The shell is `100dvh` rather than
 puts the control bar under the browser toolbar; and the control bar carries
 `env(safe-area-inset-bottom)` so it clears the home indicator.
 
+### Room for the picture
+
+Measured on a 375x812 screen, the chrome was taking **47%** of it: a 349px
+control bar and a 29px title bar around a 434px stage. Almost half the screen
+was furniture. Three changes, none of which touch the theme:
+
+**Camera and Size moved into a sheet.** They are set-once controls that were
+costing a full 38px row each, because the mobile layout gives every `.field`
+its own line. The fields are *moved* rather than duplicated, so there is still
+exactly one Camera select in the document with exactly one listener on it - the
+sheet is just where it is parented on a phone.
+
+**The readout moved into the title bar.** That bar was showing the effect
+chain, which the tab strip now spells out in full a few pixels below it, so it
+was the one piece of duplicated information in the interface. Trading it for
+the resolution and the running clock frees the readout's own row.
+
+Those two take the control bar from 349px to **224px**, and the chrome from 47%
+to 31%.
+
+**The bars fold away a few seconds after you stop touching them,** and a tap on
+the picture brings them back - which is the other 31%. Collapsed with
+`max-height` rather than by sliding a floating bar out of frame, so the bands
+stay in flow and the picture *grows* into the space instead of being covered by
+chrome sitting on top of it.
+
+That needs a real number to animate from, because `max-height` has nothing to
+interpolate against `none`. So the control bar is measured on every refresh -
+its height changes when six tabs wrap where two did not - and published as
+`--chrome-h`. Padding has to be zeroed in the collapsed state as well: under
+`border-box` a `max-height` of 0 collapses the content box but cannot eat the
+padding, which leaves a 16px strip of blue along the bottom of the screen
+looking like a rendering fault.
+
+**A take in progress keeps its title bar.** That is where the tally and the
+running clock live on a phone, and hiding "you are still recording" in order to
+show more of the picture is the one trade this should never make. The control
+bar still folds, so a running take gets everything but 29px.
+
 ### What is measured rather than guessed
 
 Mobile GPUs are tile-based deferred renderers: every full-screen pass flushes

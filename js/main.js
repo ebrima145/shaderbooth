@@ -53,6 +53,13 @@ const dom = {
   down: el("btn-down"),
   up: el("btn-up"),
   full: el("btn-full"),
+  titlebar: el("titlebar"),
+  stage: el("stage"),
+  controlbar: el("controlbar"),
+  settings: el("settings"),
+  settingsFields: el("settings-fields"),
+  settingsOpen: el("btn-settings"),
+  settingsClose: el("settings-close"),
   help: el("help"),
   helpOpen: el("btn-help"),
   helpClose: el("help-close"),
@@ -87,7 +94,13 @@ const app = {
   // said so. See noticeSlowness().
   slowSince: 0,
   warnedSlow: false,
+  idleTimer: 0,
 };
+
+// How long the bars wait after your last touch before folding away. Long
+// enough to line up a second adjustment without them vanishing mid-reach,
+// short enough that idly watching the picture gets you the whole screen.
+const CHROME_IDLE_MS = 3500;
 
 // --- messages over the picture ---------------------------------------------
 
@@ -276,9 +289,13 @@ function refresh() {
 
   dom.mirror.classList.toggle("on", app.renderer.mirror);
   dom.play.classList.toggle("playing", app.camera.live);
-  dom.rec.classList.toggle("on", !!(app.recorder && app.recorder.recording));
+  const recording = !!(app.recorder && app.recorder.recording);
+  dom.rec.classList.toggle("on", recording);
   // Opens the lens in the title bar while there is a picture.
   dom.app.classList.toggle("live", app.camera.live);
+  // Keeps the title bar up while a take runs, so the tally never hides.
+  dom.app.classList.toggle("recording", recording);
+  measureChrome();
 
   dom.status.textContent = chain.describe();
   saveLook();
@@ -295,6 +312,68 @@ function setAmountReadout() {
   const amount = app.chain.amount;
   dom.amountValue.textContent = amount.toFixed(2);
   dom.amount.style.setProperty("--fill", Math.round(amount * 100) + "%");
+}
+
+/*
+ * The bars, and getting them out of the way.
+ *
+ * max-height cannot animate against `none`, so the control bar's real height
+ * has to be published as a number for the collapse to have something to
+ * interpolate from. It changes whenever the stack does - six tabs wrap where
+ * two do not - so it is remeasured on every refresh rather than once at boot.
+ * Two pixels of slack, because a max-height a fraction under the true height
+ * would clip the bottom row for the entire time the bar is open.
+ */
+function measureChrome() {
+  if (!TOUCH || dom.app.classList.contains("chrome-hidden")) return;
+  dom.app.style.setProperty("--chrome-h", (dom.controlbar.offsetHeight + 2) + "px");
+}
+
+function chromeHidden() {
+  return dom.app.classList.contains("chrome-hidden");
+}
+
+/** Bring the bars back, and restart the countdown to hiding them again. */
+function showChrome() {
+  clearTimeout(app.idleTimer);
+  if (chromeHidden()) {
+    dom.app.classList.remove("chrome-hidden");
+    // Remeasure once the bar is laid out again: while it was collapsed its
+    // offsetHeight was zero, so anything that changed the stack in the
+    // meantime left --chrome-h stale.
+    requestAnimationFrame(measureChrome);
+  }
+  // Only ever armed on a phone, and only with a picture worth uncovering. A
+  // dialog counts as being mid-task, so the bars stay put behind it.
+  if (!TOUCH || !app.camera.live) return;
+  if (!dom.help.hidden || !dom.settings.hidden) return;
+  app.idleTimer = setTimeout(() => {
+    if (dom.help.hidden && dom.settings.hidden && app.camera.live) {
+      measureChrome();
+      dom.app.classList.add("chrome-hidden");
+    }
+  }, CHROME_IDLE_MS);
+}
+
+/** What a tap on the picture does once there is a picture. */
+function toggleChrome() {
+  if (!TOUCH || !app.camera.live) return;
+  if (chromeHidden()) return showChrome();
+  clearTimeout(app.idleTimer);
+  measureChrome();
+  dom.app.classList.add("chrome-hidden");
+}
+
+function openSheet(sheet) {
+  clearTimeout(app.idleTimer);
+  showChrome();
+  clearTimeout(app.idleTimer);
+  sheet.hidden = false;
+}
+
+function closeSheet(sheet) {
+  sheet.hidden = true;
+  showChrome();
 }
 
 /** Wipe the feedback history and reseed it from the live picture. */
@@ -337,6 +416,7 @@ async function startCamera({ deviceId = null, facing = null } = {}) {
   message("");
   buildDeviceMenu();
   refresh();
+  showChrome();
   return true;
 }
 
@@ -347,6 +427,7 @@ function stopCamera() {
           "Nothing is being captured. Start it again whenever you like.",
           "start");
   refresh();
+  showChrome();
 }
 
 /**
@@ -493,10 +574,25 @@ function wire() {
   dom.snap.addEventListener("click", takeSnapshot);
 
   dom.full.addEventListener("click", toggleFullscreen);
-  dom.helpOpen.addEventListener("click", () => { dom.help.hidden = false; });
-  dom.helpClose.addEventListener("click", () => { dom.help.hidden = true; });
+  dom.settingsOpen.addEventListener("click", () => openSheet(dom.settings));
+  dom.settingsClose.addEventListener("click", () => closeSheet(dom.settings));
+  dom.settings.addEventListener("click", (event) => {
+    if (event.target === dom.settings) closeSheet(dom.settings);
+  });
+
+  // Touching a control is a reason to keep the bars up; touching the picture
+  // is how you ask for them to go, or come back.
+  for (const type of ["pointerdown", "input", "change"]) {
+    dom.controlbar.addEventListener(type, showChrome);
+    dom.titlebar.addEventListener(type, showChrome);
+  }
+  dom.stage.addEventListener("pointerdown", (event) => {
+    if (event.target === dom.canvas || event.target === dom.stage) toggleChrome();
+  });
+  dom.helpOpen.addEventListener("click", () => openSheet(dom.help));
+  dom.helpClose.addEventListener("click", () => closeSheet(dom.help));
   dom.help.addEventListener("click", (event) => {
-    if (event.target === dom.help) dom.help.hidden = true;
+    if (event.target === dom.help) closeSheet(dom.help);
   });
 
   dom.start.addEventListener("click", () => startCamera({ deviceId: dom.device.value || null }));
@@ -516,6 +612,8 @@ function wire() {
   });
 
   window.addEventListener("keydown", onKey);
+  window.addEventListener("resize", measureChrome);
+  window.addEventListener("orientationchange", () => setTimeout(measureChrome, 250));
   window.addEventListener("beforeunload", () => app.camera.stop());
 }
 
@@ -569,7 +667,8 @@ function onKey(event) {
   const key = event.key;
 
   if (key === "Escape") {
-    if (!dom.help.hidden) dom.help.hidden = true;
+    if (!dom.settings.hidden) closeSheet(dom.settings);
+    else if (!dom.help.hidden) closeSheet(dom.help);
     else if (document.fullscreenElement) document.exitFullscreen();
     else document.activeElement?.blur?.();
   } else if (key === " ") {
@@ -612,6 +711,7 @@ function onKey(event) {
   } else {
     return;
   }
+  showChrome();
   event.preventDefault();
 }
 
@@ -628,6 +728,19 @@ function applyTouchLayout() {
   dom.prev.hidden = true;
   dom.next.title = "Switch camera";
   dom.next.setAttribute("aria-label", "Switch camera");
+
+  // The two set-once controls move into a sheet. Moved rather than copied:
+  // these are the same elements with the same listeners, just parented
+  // somewhere that is not costing 76px of a 812px screen at all times.
+  dom.settingsOpen.hidden = false;
+  dom.settingsFields.append(dom.device.closest(".field"),
+                            dom.resolution.closest(".field"));
+
+  // The title bar was showing the effect chain, which the tab strip spells out
+  // in full a few pixels below it. The readout is not a duplicate of anything,
+  // so it gets the space instead.
+  dom.status.hidden = true;
+  dom.titlebar.insertBefore(dom.readout, el("title-buttons"));
 }
 
 // --- boot -------------------------------------------------------------------

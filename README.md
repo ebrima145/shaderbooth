@@ -167,6 +167,12 @@ saves a still.
   are the first thing to drop. If the frame rate sits under 20 the readout says
   so, once.
 
+- **On a phone the bars fold away** a few seconds after you stop touching
+  them, and a tap on the picture brings them back — the chrome was taking 47%
+  of a 375x812 screen. A take in progress keeps its title bar, so the tally and
+  the clock never hide. Camera and Size move into the **⋮** sheet, being the
+  two controls nobody changes twice in a session.
+
 - **The Camera drop-down becomes a switch-camera button on a phone**, because
   front and back is the only distinction anyone means — Android otherwise
   enumerates the wide, ultrawide and depth sensors as separate devices. The

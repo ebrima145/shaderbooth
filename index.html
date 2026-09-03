@@ -18,6 +18,8 @@
     <span id="title-text">Shaderbooth</span>
     <span id="title-status">starting&hellip;</span>
     <span id="title-buttons">
+      <button id="btn-settings" class="cap dots" title="Camera and size"
+              aria-label="Camera and size" hidden></button>
       <button id="btn-help" class="cap" title="Keys and about" aria-label="Keys and about">?</button>
       <button id="btn-full" class="cap" title="Fullscreen (F)" aria-label="Fullscreen">&#9744;</button>
     </span>
@@ -89,7 +91,17 @@
   </div>
 </div>
 
-<div id="help" hidden>
+<div id="settings" class="sheet" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <h2 id="settings-title">Source</h2>
+    <p>Which camera, and what to ask it for. The size is a request &mdash; the
+       readout shows what you actually got.</p>
+    <div id="settings-fields"></div>
+    <button id="settings-close" class="push">Done</button>
+  </div>
+</div>
+
+<div id="help" class="sheet" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="help-title">
     <h2 id="help-title">Shaderbooth</h2>
     <p>Your camera, through up to six stacked GLSL effects, on the GPU. Nothing
