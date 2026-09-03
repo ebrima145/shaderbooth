@@ -57,6 +57,12 @@
 
 * { box-sizing: border-box; }
 
+/* The `hidden` attribute has to outrank layout declarations. A UA stylesheet
+   only says `[hidden] { display: none }`, which any author rule beats - so
+   giving .round a `display` to centre its glyph silently un-hid every button
+   that JS had marked hidden, and the phone got its "previous camera" back. */
+[hidden] { display: none !important; }
+
 html, body {
   height: 100%;
   /* Dynamic viewport height, because iOS Safari's toolbar collapses as you
@@ -386,6 +392,8 @@ kbd {
   box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   position: relative;
+  display: grid;
+  place-items: center;
   padding: 0;
   color: var(--ink);
   font: 12px Tahoma, sans-serif;
@@ -408,91 +416,45 @@ kbd {
   box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* The glyphs are drawn rather than typed: a triangle and two bars set in a
-   font are at the mercy of whatever the browser substitutes, and at 27px the
-   difference between a centred play arrow and an off-centre one is obvious. */
-.round::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
+/*
+ * The glyphs are inline SVG, from one sprite at the top of the document.
+ *
+ * Not font characters, which are at the mercy of whatever the browser
+ * substitutes. And no longer CSS shapes either: those avoid the substitution
+ * problem but cost a two-pseudo-element budget per button, which is how the
+ * camera came to read as a briefcase and the flip as two vague triangles - and
+ * every size needed its own hand-tuned copy of the same drawing, three of them
+ * by the end. A viewBox scales for free, so one definition now serves the 27px
+ * bar button, the 44px touch target and the 62px shutter.
+ *
+ * Everything is drawn against currentColor, so a button changes its glyph by
+ * changing its own colour.
+ */
+.round svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  pointer-events: none;
 }
+.round.big svg { width: 19px; height: 19px; }
 
-#btn-play::before {
-  width: 0; height: 0;
-  border-left: 12px solid var(--ink);
-  border-top: 7.5px solid transparent;
-  border-bottom: 7.5px solid transparent;
-  transform: translateX(2px);
-}
-#btn-play.playing::before {
-  width: 11px; height: 13px;
-  border: none;
-  transform: none;
-  background: linear-gradient(90deg, var(--ink) 0 36%, transparent 36% 64%, var(--ink) 64% 100%);
-}
+#btn-play .i-pause, #btn-play.playing .i-play { display: none; }
+#btn-play.playing .i-pause { display: block; }
 
-#btn-prev::before, #btn-next::before {
-  width: 0; height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-}
-#btn-prev::before { border-right: 8px solid var(--ink); transform: translateX(-1px); }
-#btn-next::before { border-left: 8px solid var(--ink); transform: translateX(1px); }
+/* "Next camera" means "switch camera" on a phone, where it takes the rotation
+   glyph instead - beside a play triangle, a second triangle read as
+   fast-forward. */
+#btn-next .i-flip { display: none; }
 
-/* The picture and its reflection: the same arrowhead twice, pointing away
-   from a shared axis, with the copy faded. Two CSS triangles, which is all
-   the pseudo-element budget allows and reads more clearly than the hollow
-   outline it replaced. */
-#btn-mirror::before {
-  width: 0; height: 0;
-  border-right: 7px solid var(--ink);
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  transform: translateX(-4px);
-}
-#btn-mirror::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 0; height: 0;
-  border-left: 7px solid var(--ink);
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  transform: translateX(4px);
-  opacity: 0.42;
-}
-
-.rec-dot::before {
-  width: 13px; height: 13px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff9b9b, #d40000 72%);
-}
-.rec-dot.on::before { background: radial-gradient(circle at 35% 30%, #ffc4c4, #ff1c1c 72%); }
-.rec-dot.on { animation: pulse 1.3s ease-in-out infinite; }
+.rec-dot { color: #d40000; }
+.rec-dot:hover:not(:disabled) { color: #ee1111; }
+.rec-dot.on { color: #ff1c1c; animation: pulse 1.3s ease-in-out infinite; }
 @keyframes pulse {
   50% {
     box-shadow: inset 0 1px 0 #fff, 0 0 0 4px rgba(224, 0, 0, 0.3),
                 0 0 12px rgba(255, 40, 40, 0.7);
   }
-}
-
-.snap-icon::before {
-  width: 16px; height: 11px;
-  border: 2px solid var(--ink);
-  border-radius: 2px;
-  background: radial-gradient(circle at 50% 55%, var(--ink) 0 2.6px, transparent 2.7px);
-}
-.snap-icon::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 6px; height: 3px;
-  transform: translate(-2px, -8px);
-  border-radius: 1px 1px 0 0;
-  background: var(--ink);
 }
 
 /* --- readout ------------------------------------------------------------- */
@@ -866,9 +828,8 @@ input[type="range"]::-moz-range-thumb {
   }
   #btn-quick-rec { width: 62px; height: 62px; }
   #btn-quick-snap { width: 48px; height: 48px; }
-  #btn-quick-rec::before { width: 26px; height: 26px; }
-  #btn-quick-snap::before { width: 26px; height: 18px; border-width: 3px; }
-  #btn-quick-snap::after { width: 10px; height: 4px; transform: translate(-3px, -13px); }
+  #btn-quick-rec svg { width: 32px; height: 32px; }
+  #btn-quick-snap svg { width: 26px; height: 26px; }
 }
 
 /* --- the source sheet ---------------------------------------------------- */
@@ -986,37 +947,10 @@ input[type="range"]::-moz-range-thumb {
 
   .round { width: 44px; height: 44px; }
   .round.big { width: 54px; height: 54px; }
-  #btn-play::before { border-left-width: 18px; border-top-width: 11px; border-bottom-width: 11px; }
-  #btn-play.playing::before { width: 16px; height: 20px; }
-  #btn-prev::before { border-right-width: 12px; border-top-width: 8px; border-bottom-width: 8px; }
-
-  /* "Next camera" means "switch camera" here, so it stops wearing a transport
-     glyph. A ring with a bite out of it and an arrowhead on the end reads as
-     rotation, which is the icon every phone camera app has trained people on
-     - and next to a play triangle, a second triangle read as fast-forward. */
-  #btn-next::before {
-    width: 18px; height: 18px;
-    border: 2.5px solid var(--ink);
-    border-radius: 50%;
-    border-top-color: transparent;
-    transform: rotate(40deg);
-  }
-  #btn-next::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    margin: auto;
-    width: 0; height: 0;
-    border-left: 7px solid var(--ink);
-    border-top: 4.5px solid transparent;
-    border-bottom: 4.5px solid transparent;
-    transform: translate(4px, -9px) rotate(28deg);
-  }
-  #btn-mirror::before { border-right-width: 10px; border-top-width: 9px; border-bottom-width: 9px; }
-  #btn-mirror::after { border-left-width: 10px; border-top-width: 9px; border-bottom-width: 9px; }
-  .rec-dot::before { width: 20px; height: 20px; }
-  .snap-icon::before { width: 24px; height: 17px; border-width: 3px; }
-  .snap-icon::after { width: 9px; height: 4px; transform: translate(-3px, -12px); }
+  .round svg { width: 24px; height: 24px; }
+  .round.big svg { width: 30px; height: 30px; }
+  #btn-next .i-next { display: none; }
+  #btn-next .i-flip { display: block; }
 
   .tiny { width: 40px; height: 40px; font-size: 15px; }
   .chip { height: 38px; padding: 0 12px 0 8px; font-size: 13px; border-radius: 6px 6px 3px 3px; }

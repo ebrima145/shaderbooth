@@ -11,6 +11,18 @@
 </head>
 <body>
 
+<svg id="icons" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8.9 5.3 19.3 12 8.9 18.7Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="8.3" y="5.6" width="3.1" height="12.8" rx=".9"/><rect x="12.9" y="5.6" width="3.1" height="12.8" rx=".9"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><rect x="6.5" y="5.6" width="2.3" height="12.8" rx=".8"/><path d="M18.6 5.8v12.4L9.9 12Z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M5.4 5.8v12.4L14.1 12Z"/><rect x="15.2" y="5.6" width="2.3" height="12.8" rx=".8"/></symbol>
+  <symbol id="i-flip" viewBox="0 0 24 24"><path d="M12 5.4a6.6 6.6 0 1 1-6.35 8.45" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M11.2 2.2 15.4 5.4 11.2 8.6Z"/></symbol>
+  <symbol id="i-mirror" viewBox="0 0 24 24"><path d="M10.3 6.7 4.7 12l5.6 5.3Z"/><path d="M13.7 6.7 19.3 12l-5.6 5.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 3.3v17.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2.6"/></symbol>
+  <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M8.7 6.1h6.6l1.5 2.3H20a1.3 1.3 0 0 1 1.3 1.3v8.1a1.3 1.3 0 0 1-1.3 1.3H4a1.3 1.3 0 0 1-1.3-1.3V9.7A1.3 1.3 0 0 1 4 8.4h3.2ZM12 9.8a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4Z"/><circle cx="12" cy="13.5" r="1.5"/></symbol>
+</svg>
+
+
 <div id="app">
 
   <div id="titlebar">
@@ -30,9 +42,9 @@
 
     <div id="quick" aria-hidden="false">
       <button id="btn-quick-rec" class="round rec-dot" title="Record the output (R)"
-              aria-label="Record the output"></button>
-      <button id="btn-quick-snap" class="round snap-icon" title="Save a still (S)"
-              aria-label="Save a still"></button>
+              aria-label="Record the output"><svg class="i-rec" viewBox="0 0 24 24"><use href="#i-rec"/></svg></button>
+      <button id="btn-quick-snap" class="round" title="Save a still (S)"
+              aria-label="Save a still"><svg class="i-cam" viewBox="0 0 24 24"><use href="#i-cam"/></svg></button>
     </div>
 
     <div id="message">
@@ -51,15 +63,15 @@
   <div id="controlbar">
 
     <div class="row transport">
-      <button id="btn-play" class="round big" title="Start / stop the camera (Space)" aria-label="Start or stop the camera"></button>
-      <button id="btn-prev" class="round" title="Previous camera (Ctrl + Left)" aria-label="Previous camera"></button>
-      <button id="btn-next" class="round" title="Next camera (Tab)" aria-label="Next camera"></button>
-      <button id="btn-mirror" class="round" title="Mirror horizontally (M)" aria-label="Mirror horizontally"></button>
+      <button id="btn-play" class="round big" title="Start / stop the camera (Space)" aria-label="Start or stop the camera"><svg class="i-play" viewBox="0 0 24 24"><use href="#i-play"/></svg><svg class="i-pause" viewBox="0 0 24 24"><use href="#i-pause"/></svg></button>
+      <button id="btn-prev" class="round" title="Previous camera (Ctrl + Left)" aria-label="Previous camera"><svg class="i-prev" viewBox="0 0 24 24"><use href="#i-prev"/></svg></button>
+      <button id="btn-next" class="round" title="Next camera (Tab)" aria-label="Next camera"><svg class="i-next" viewBox="0 0 24 24"><use href="#i-next"/></svg><svg class="i-flip" viewBox="0 0 24 24"><use href="#i-flip"/></svg></button>
+      <button id="btn-mirror" class="round" title="Mirror horizontally (M)" aria-label="Mirror horizontally"><svg class="i-mirror" viewBox="0 0 24 24"><use href="#i-mirror"/></svg></button>
 
       <span class="divider"></span>
 
-      <button id="btn-rec" class="round rec-dot" title="Record the output (R)" aria-label="Record the output"></button>
-      <button id="btn-snap" class="round snap-icon" title="Save a still (S)" aria-label="Save a still"></button>
+      <button id="btn-rec" class="round rec-dot" title="Record the output (R)" aria-label="Record the output"><svg class="i-rec" viewBox="0 0 24 24"><use href="#i-rec"/></svg></button>
+      <button id="btn-snap" class="round" title="Save a still (S)" aria-label="Save a still"><svg class="i-cam" viewBox="0 0 24 24"><use href="#i-cam"/></svg></button>
 
       <span id="readout">&ndash;</span>
 
