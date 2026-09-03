@@ -129,13 +129,18 @@ saves a still.
 
 ## Gotchas
 
+- **Click the picture to put the controls away**, at any window size — windowed,
+  maximised or fullscreen. Clicking it again brings them back, and the floating
+  shutter stays over the picture meanwhile. Only *fullscreen* also folds them on
+  its own after a few idle seconds; a window never hides its own controls
+  unasked, because you would have to go looking for them.
+
 - **Drag a layer tab to reorder the chain** on a desktop — order is most of the
   expressive range, and it was two steps before. The scroll wheel works over
   the Amount slider. **Maximise** is the middle caption button; `F` is
   fullscreen. Entering fullscreen folds the bars at once and fills the screen
   with the picture; **record and still stay floating over it**, and moving the
-  mouse does *not* bring the bars back. Click the picture when you want them,
-  or press `Esc`. Filling means cropping rather than letterboxing, and the crop
+  mouse does *not* bring the bars back — click the picture, or press `Esc`. Filling means cropping rather than letterboxing, and the crop
   is display only: the recording is always the whole camera frame.
 
 - **No fullscreen button on iPhone.** iOS only does fullscreen on a `<video>`

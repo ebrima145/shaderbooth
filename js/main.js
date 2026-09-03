@@ -507,14 +507,18 @@ function chromeHidden() {
 }
 
 /*
- * Whether the bars are allowed to fold away at all.
+ * Whether the bars fold away *on their own* after a few idle seconds.
  *
  * On a phone, always - the screen is small and the chrome was half of it. On a
  * desktop, only in fullscreen, because that is the one time someone has said
- * in as many words that they want the picture and nothing else. A window that
- * hid its own controls while sitting on a desktop would just be losing them.
+ * in as many words that they want the picture and nothing else. A window
+ * sitting on a desktop that quietly hid its own controls would just be losing
+ * them, and you would have to discover the way back.
+ *
+ * Folding them *by hand* is a different question and has no such gate: see
+ * toggleChrome(). Asking for it is asking for it, at any window size.
  */
-function chromeCanFold() {
+function chromeAutoFolds() {
   return TOUCH || !!document.fullscreenElement;
 }
 
@@ -546,9 +550,10 @@ function revealChrome() {
 function showChrome() {
   clearTimeout(app.idleTimer);
   revealChrome();
-  // Only ever armed on a phone, and only with a picture worth uncovering. A
-  // dialog counts as being mid-task, so the bars stay put behind it.
-  if (!chromeCanFold() || !app.camera.live) return;
+  // Only armed where the bars fold on their own, and only with a picture worth
+  // uncovering. A dialog counts as being mid-task, so the bars stay put behind
+  // it.
+  if (!chromeAutoFolds() || !app.camera.live) return;
   if (!dom.help.hidden || !dom.settings.hidden || !dom.looks.hidden) return;
   app.idleTimer = setTimeout(() => {
     if (dom.help.hidden && dom.settings.hidden && dom.looks.hidden
@@ -571,9 +576,19 @@ function setMaximised(on) {
   try { localStorage.setItem(WINDOW_KEY, on ? "max" : ""); } catch { /* see loadLook */ }
 }
 
-/** What a tap on the picture does once there is a picture. */
+/**
+ * What a click or a tap on the picture does once there is a picture.
+ *
+ * Works at every window size - windowed, maximised and fullscreen alike.
+ * Deciding to put the controls away is a decision, and there is no reason a
+ * 1100px window should refuse one that fullscreen accepts; the reveal is the
+ * same click, so nothing is stranded.
+ *
+ * A live picture is still required. Hiding the controls over a black rectangle
+ * would leave nothing to look at and nothing obvious to press.
+ */
 function toggleChrome() {
-  if (!chromeCanFold() || !app.camera.live) return;
+  if (!app.camera.live) return;
   if (chromeHidden()) return showChrome();
   clearTimeout(app.idleTimer);
   hideChrome();

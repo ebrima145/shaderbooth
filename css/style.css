@@ -1163,6 +1163,7 @@ tr.touch-only { display: none; }
      and the title bar needs that slot for the readout. */
   #btn-max { display: none; }
   tr.touch-only { display: table-row; }
+  tr.mouse-only { display: none; }
   .field { font-size: 13px; }
   .row { gap: 9px; }
 
