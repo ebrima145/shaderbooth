@@ -122,9 +122,12 @@ saves a still.
   symptom is "Could not load the shaders — `_common.glsl`: HTTP 404" on a
   deploy that otherwise looks fine.
 
-- **Recordings are WebM, not MP4** (except on Safari, which produces MP4).
-  WebM plays in every browser and in VLC, Resolve and Premiere. If you need it
-  somewhere fussier, `ffmpeg -i in.webm -c copy out.mp4` is usually enough.
+- **Recordings are MP4/H.264 in Chrome, Edge and Safari — WebM in Firefox.**
+  Firefox's MediaRecorder has no MP4 muxer, so it falls back to VP9 in WebM
+  rather than failing. The extension always matches what was actually
+  negotiated, because a `.mp4` file that is really WebM fails to open with a
+  codec error, which is worse than an honest `.webm`. To convert one:
+  `ffmpeg -i in.webm -c copy out.mp4`.
 
 - **Recordings have no audio.** The camera is opened video-only on purpose: a
   microphone permission prompt for an app that does nothing with sound is a bad

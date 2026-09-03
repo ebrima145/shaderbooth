@@ -15,13 +15,21 @@
  *   permission prompt for an app that does nothing with sound is a bad trade,
  *   and the browser asks for both at once or not at all.
  *
- * - **WebM, not MP4.** captureStream + MediaRecorder gives VP9 or VP8 in a
- *   WebM container on every browser that supports it; Safari is the exception
- *   and produces MP4/H.264. The codec list below is tried in order and the
- *   first one the browser admits to is used, so the file extension follows
- *   from what was actually negotiated rather than being assumed. WebM plays in
- *   every browser and in VLC/Resolve/Premiere; if you need it in something
- *   fussier, remux it - `ffmpeg -i in.webm -c copy out.mp4` is usually enough.
+ * - **MP4 where the browser can, WebM where it cannot.** MP4/H.264 is what
+ *   everything downstream expects - phones, editors, messaging apps, anything
+ *   that will not touch a .webm - so it is tried first. Chrome, Edge and
+ *   Safari all produce it. Firefox's MediaRecorder still has no MP4 muxer, so
+ *   it falls back down the list to VP9 in WebM rather than failing.
+ *
+ *   The extension follows what was actually negotiated rather than what was
+ *   asked for. That matters: writing ".mp4" on a WebM blob produces a file
+ *   that fails to open with a codec error, which is a far worse outcome than
+ *   an honest .webm. If you end up with one, `ffmpeg -i in.webm -c copy
+ *   out.mp4` usually remuxes it without re-encoding.
+ *
+ *   What MediaRecorder writes is *fragmented* MP4. Browsers, VLC, Resolve and
+ *   Premiere all read it; a few older Windows tools want a faststart remux
+ *   first, which is the same one-line ffmpeg call.
  *
  * The blob is assembled in memory and only written out when you stop, because
  * a page has no incremental write to disk without asking for a directory
@@ -30,13 +38,19 @@
  * there to make visible.
  */
 
-// Tried in order; the first the browser supports wins.
+// Tried in order; the first the browser supports wins. MP4/H.264 leads because
+// it is the format everything downstream will actually open.
+//
+// `avc1` is left unqualified on purpose. Pinning a profile and level - the
+// avc1.640028 kind of string - fixes the encoder to High@4.0, which is a
+// ceiling of about 2048x1080: fine at 720p, silently wrong at 4K. Bare avc1
+// lets the browser choose a level that fits the canvas it is actually handed.
 const CODECS = [
-  ["video/webm;codecs=vp9", "webm"],
+  ["video/mp4;codecs=avc1", "mp4"],
+  ["video/mp4", "mp4"],
+  ["video/webm;codecs=vp9", "webm"],   // Firefox, which has no MP4 muxer
   ["video/webm;codecs=vp8", "webm"],
   ["video/webm", "webm"],
-  ["video/mp4;codecs=avc1", "mp4"],   // Safari
-  ["video/mp4", "mp4"],
 ];
 
 function pickCodec() {

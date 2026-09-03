@@ -272,10 +272,24 @@ reaches the canvas. So the file is the picture you made, at the resolution you
 made it at, not a screen recording of the app that made it. `S` saves one
 frame of the same thing as a PNG.
 
-**The container follows what the browser will admit to.** `recorder.js` tries
-VP9, then VP8, then bare WebM, then MP4 for Safari, and the file extension
-follows what was actually negotiated rather than being assumed. In practice
-that is WebM everywhere except Safari.
+**MP4 first, WebM only as a fallback.** `recorder.js` asks for
+`video/mp4;codecs=avc1` and works down a list, because MP4/H.264 is what
+everything downstream actually opens — phones, editors, messaging apps,
+anything that will not touch a `.webm`. Chrome, Edge and Safari all produce it.
+Firefox's MediaRecorder still has no MP4 muxer, so it drops to VP9 in WebM.
+
+`avc1` is deliberately left unqualified. Pinning a profile and level — the
+`avc1.640028` kind of string — fixes the encoder to High@4.0, a ceiling of
+roughly 2048×1080: fine at 720p and silently wrong at 4K. Bare `avc1` lets the
+browser pick a level that fits the canvas it was handed.
+
+**The extension follows what was negotiated, not what was asked for.** Writing
+`.mp4` on a WebM blob produces a file that fails to open with a codec error,
+which is a worse outcome than an honest `.webm` the person can remux.
+
+What MediaRecorder writes is *fragmented* MP4. Browsers, VLC, Resolve and
+Premiere all read it; a few older Windows tools want a faststart remux first,
+which is the same one-line `ffmpeg` call.
 
 **No audio**, deliberately. The browser asks for camera and microphone
 permission together or not at all, and a microphone prompt for an app that
@@ -603,8 +617,11 @@ compile is skipped rather than fatal, so a stack of one broken layer shows
 what came in — but if the *camera* never produced a frame, the readout shows
 no resolution.
 
-**Recording produces a file that won't open.** It is WebM. Rename-and-hope
-does not work; `ffmpeg -i in.webm -c copy out.mp4` does.
+**Recording produces a file that won't open.** Check the extension first. On
+Firefox it is a `.webm`, because that browser cannot mux MP4 — rename-and-hope
+does not work, but `ffmpeg -i in.webm -c copy out.mp4` does. If it is a `.mp4`
+and something still refuses it, that tool wants a non-fragmented file:
+`ffmpeg -i in.mp4 -c copy -movflags +faststart out.mp4`.
 
 **Frame rate collapses with several layers.** Six layers at 1080p is six
 full-resolution passes and twelve textures. Bokeh, Kuwahara and Frosted Glass
