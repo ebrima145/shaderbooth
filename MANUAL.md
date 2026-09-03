@@ -571,6 +571,17 @@ the world and flipping that makes text unreadable. Applied only when the facing
 actually changes, so a manual toggle survives a resolution change or a reopen
 of the same camera.
 
+**No fullscreen button on iOS.** iOS only implements fullscreen on a `<video>`
+element, so on an iPhone the button was dead and every press answered with
+"fullscreen refused". It is hidden by feature detection rather than on all
+touch devices, because Android Chrome does support it and the button is
+genuinely worth having there — it takes the browser's own address bar away, on
+top of the app folding its bars. The key's row in the help list goes with it,
+since documenting a key that does nothing is worse than not mentioning it.
+
+Installing to the home screen gets an iPhone the same result by another route:
+`display: standalone` launches with no browser chrome at all.
+
 **Hit targets and viewport units.** Everything in the transport row was drawn
 for a mouse — the stack buttons are 21px against a ~44px floor for a
 fingertip — so the sizes lift under `(pointer: coarse)` without touching the

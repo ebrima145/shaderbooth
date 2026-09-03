@@ -138,6 +138,11 @@ saves a still.
   or press `Esc`. Filling means cropping rather than letterboxing, and the crop
   is display only: the recording is always the whole camera frame.
 
+- **No fullscreen button on iPhone.** iOS only does fullscreen on a `<video>`
+  element, so the button cannot work there and is hidden rather than left to
+  refuse. Android Chrome supports it and keeps it. Installing to the home
+  screen gives you the same thing on iOS: a launch with no browser chrome.
+
 - **`file://` will never work.** See above. This is the single most common way
   to conclude the app is broken when it isn't.
 

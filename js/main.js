@@ -62,6 +62,7 @@ const dom = {
   looksSave: el("looks-save"),
   looksClose: el("looks-close"),
   full: el("btn-full"),
+  keyFullscreen: el("key-fullscreen"),
   max: el("btn-max"),
   titlebar: el("titlebar"),
   stage: el("stage"),
@@ -1123,6 +1124,21 @@ async function boot() {
   app.library = new EffectLibrary(app.renderer.gl, sources);
   app.chain = new EffectChain(app.library);
   app.recorder = new Recorder(dom.canvas, 30);
+
+  /*
+   * iOS only does fullscreen on a <video>, so the button is dead on an iPhone
+   * and every press was answered with "fullscreen refused". Hide it there,
+   * along with its row in the key list, which would otherwise document a key
+   * that does nothing.
+   *
+   * Feature-detected rather than hidden on all touch devices: Android Chrome
+   * supports it, and there the button is genuinely worth having - it takes the
+   * browser's own address bar away, on top of the app folding its bars.
+   */
+  if (!document.fullscreenEnabled || !dom.app.requestFullscreen) {
+    dom.full.hidden = true;
+    dom.keyFullscreen.hidden = true;
+  }
 
   if (TOUCH) applyTouchLayout();
   try { setMaximised(localStorage.getItem(WINDOW_KEY) === "max"); }
