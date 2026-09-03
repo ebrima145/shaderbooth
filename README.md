@@ -122,6 +122,12 @@ saves a still.
   symptom is "Could not load the shaders — `_common.glsl`: HTTP 404" on a
   deploy that otherwise looks fine.
 
+- **On a phone, saving goes through the share sheet, not a download.** That is
+  the only route from a web page to the camera roll, and it is also how the
+  file reaches Messages or anywhere else in one step. Dismissing the sheet
+  saves nothing — the app says "not saved" rather than quietly downloading a
+  file you just declined.
+
 - **Recordings are MP4/H.264 in Chrome, Edge and Safari — WebM in Firefox.**
   Firefox's MediaRecorder has no MP4 muxer, so it falls back to VP9 in WebM
   rather than failing. The extension always matches what was actually
@@ -152,6 +158,20 @@ saves a still.
 
 - **Integrated GPUs** will not hold 60fps with six heavy layers at 1080p. Drop
   the size to 720p before you start dropping effects.
+
+- **Phones are slower than the layer count suggests.** Mobile GPUs are
+  tile-based: every full-screen pass writes the tile buffer out to memory and
+  reads it back, so a six-deep stack costs six round-trips that are nearly free
+  on a desktop card. The three effects marked **(heavy)** in the list — Bokeh,
+  Kuwahara, Frosted Glass — take 128, ~196 and 20 texture samples per pixel and
+  are the first thing to drop. If the frame rate sits under 20 the readout says
+  so, once.
+
+- **The Camera drop-down becomes a switch-camera button on a phone**, because
+  front and back is the only distinction anyone means — Android otherwise
+  enumerates the wide, ultrawide and depth sensors as separate devices. The
+  mirror follows the lens: on for the front camera, off for the back, so text
+  you point at stays readable.
 
 ## What's here
 

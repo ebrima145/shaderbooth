@@ -40,10 +40,16 @@ export class Camera {
     this.stream = null;
     this.devices = [];        // [{deviceId, label}, ...]
     this.deviceId = null;
+    // "user" | "environment" | null. Phones report it; most desktop webcams
+    // do not, which is the signal this app uses to tell the two apart.
+    this.facing = null;
     this.width = 1280;
     this.height = 720;
     this.error = null;
   }
+
+  /** True when we know we are looking at the person holding the device. */
+  get isFrontFacing() { return this.facing === "user"; }
 
   get live() {
     return this.stream !== null && this.video.readyState >= 2;
@@ -80,7 +86,7 @@ export class Camera {
    * videoWidth is anything but zero - and a renderer sized from a zero-width
    * video allocates nothing and shows black.
    */
-  async open(deviceId = null, width = null, height = null) {
+  async open({ deviceId = null, facing = null, width = null, height = null } = {}) {
     this.error = null;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error(
@@ -92,7 +98,12 @@ export class Camera {
     if (height) this.height = height;
 
     const video = { width: { ideal: this.width }, height: { ideal: this.height } };
-    if (deviceId) video.deviceId = { ideal: deviceId };
+    // facingMode wins over deviceId when both are offered. On a phone the two
+    // disagree constantly - Android enumerates the wide, ultrawide and depth
+    // sensors as separate devices, so cycling ids lands on lenses nobody asked
+    // for, while "front" and "back" is the only distinction anyone means.
+    if (facing) video.facingMode = { ideal: facing };
+    else if (deviceId) video.deviceId = { ideal: deviceId };
 
     this.stop();
     let stream;
@@ -107,6 +118,7 @@ export class Camera {
     this.video.srcObject = stream;
     const settings = stream.getVideoTracks()[0].getSettings();
     this.deviceId = settings.deviceId || deviceId || null;
+    this.facing = settings.facingMode || facing || null;
 
     await this.video.play();
     if (!this.video.videoWidth) {
@@ -117,6 +129,18 @@ export class Camera {
 
     await this.listDevices();
     return this;
+  }
+
+  /**
+   * The other side of the phone.
+   *
+   * Returns the facing to ask for next, flipping from whatever is open. When
+   * the current camera does not report a facing at all - most desktop webcams
+   * - this assumes it is the front one, because a device with a single
+   * unlabelled camera pointed at you is overwhelmingly the common case.
+   */
+  otherFacing() {
+    return this.facing === "environment" ? "user" : "environment";
   }
 
   /** The next device in the list, wrapping - what Tab does. */

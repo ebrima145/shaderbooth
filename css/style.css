@@ -59,6 +59,12 @@
 
 html, body {
   height: 100%;
+  /* Dynamic viewport height, because iOS Safari's toolbar collapses as you
+     scroll and 100% resolves against the *largest* viewport - which puts the
+     control bar underneath the browser chrome for as long as the toolbar is
+     showing. dvh tracks the real one. The 100% above stays as the fallback
+     for anything that has not heard of dvh. */
+  height: 100dvh;
   margin: 0;
   font: 11px Tahoma, "Segoe UI", Verdana, sans-serif;
   color: var(--bar-text);
@@ -344,7 +350,11 @@ kbd {
   background: var(--wmp-bar);
   border-top: 1px solid #f3f7fe;
   box-shadow: inset 0 -1px 0 #2f549e;
-  padding: 7px 9px 9px;
+  /* The bottom inset keeps the transport row clear of the home indicator on a
+     phone held in portrait. It is zero everywhere else, so this is the same
+     padding on a desktop. The page already asks for viewport-fit=cover, which
+     is what makes env() resolve to anything but zero. */
+  padding: 7px 9px calc(9px + env(safe-area-inset-bottom, 0px));
   user-select: none;
 }
 
@@ -807,8 +817,84 @@ input[type="range"]::-moz-range-thumb {
     margin-left: 0;
     margin-top: 2px;
   }
-  #readout { margin-left: auto; min-width: 0; }
+  /* The transport buttons already fill the row at this width, so the readout
+     always wraps. Letting it stretch across the line it lands on makes it read
+     as a status bar rather than as something that fell off the end. */
+  #readout { flex: 1 1 100%; margin-left: 0; min-width: 0; }
   .field, .field.narrow { flex: 1 1 100%; }
+}
+
+/* --- touch --------------------------------------------------------------- */
+
+/*
+ * Finger-sized controls.
+ *
+ * Everything in the transport row was drawn for a mouse: the stack buttons are
+ * 21px and the tabs 22px tall, against a ~44px floor for a fingertip. Rather
+ * than compromise the desktop layout, the sizes lift only where the primary
+ * pointer is coarse - so a laptop with a touchscreen, which still has a mouse,
+ * keeps the tight version.
+ *
+ * touch-action: manipulation removes the ~300ms wait a browser holds before
+ * dispatching a tap in case it turns into a double-tap zoom, which is the
+ * single biggest reason a web app feels slower than a native one.
+ */
+@media (pointer: coarse) {
+  .round, .tiny, .chip, .cap, .push, select {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Long-press on chrome pops a text-selection or image menu otherwise, which
+     is never what someone reaching for a transport button meant. */
+  #titlebar, #controlbar { -webkit-touch-callout: none; }
+
+  .round { width: 44px; height: 44px; }
+  .round.big { width: 54px; height: 54px; }
+  #btn-play::before { border-left-width: 18px; border-top-width: 11px; border-bottom-width: 11px; }
+  #btn-play.playing::before { width: 16px; height: 20px; }
+  #btn-prev::before { border-right-width: 12px; border-top-width: 8px; border-bottom-width: 8px; }
+
+  /* "Next camera" means "switch camera" here, so it stops wearing a transport
+     glyph. A ring with a bite out of it and an arrowhead on the end reads as
+     rotation, which is the icon every phone camera app has trained people on
+     - and next to a play triangle, a second triangle read as fast-forward. */
+  #btn-next::before {
+    width: 18px; height: 18px;
+    border: 2.5px solid var(--ink);
+    border-radius: 50%;
+    border-top-color: transparent;
+    transform: rotate(40deg);
+  }
+  #btn-next::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 0; height: 0;
+    border-left: 7px solid var(--ink);
+    border-top: 4.5px solid transparent;
+    border-bottom: 4.5px solid transparent;
+    transform: translate(4px, -9px) rotate(28deg);
+  }
+  #btn-mirror::before { border-right-width: 10px; border-top-width: 9px; border-bottom-width: 9px; }
+  #btn-mirror::after { border-left-width: 10px; border-top-width: 9px; border-bottom-width: 9px; }
+  #btn-rec::before { width: 20px; height: 20px; }
+  #btn-snap::before { width: 24px; height: 17px; border-width: 3px; }
+  #btn-snap::after { width: 9px; height: 4px; transform: translate(-3px, -12px); }
+
+  .tiny { width: 40px; height: 40px; font-size: 15px; }
+  .chip { height: 38px; padding: 0 12px 0 8px; font-size: 13px; border-radius: 6px 6px 3px 3px; }
+  .chip-n { width: 20px; height: 20px; font-size: 11px; }
+  .chip-name { max-width: 14ch; }
+
+  select { height: 38px; font-size: 14px; padding: 1px 6px; }
+  input[type="range"] { height: 40px; }
+  input[type="range"]::-webkit-slider-thumb { width: 20px; height: 30px; margin-top: -12.5px; }
+  input[type="range"]::-moz-range-thumb { width: 20px; height: 30px; }
+  .cap { width: 34px; height: 30px; font-size: 14px; }
+  .field { font-size: 13px; }
+  .row { gap: 9px; }
 }
 
 /* --- motion -------------------------------------------------------------- */

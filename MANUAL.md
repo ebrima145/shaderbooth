@@ -18,6 +18,7 @@ This is everything else.
 - [Project structure](#project-structure)
 - [How a frame gets to the screen](#how-a-frame-gets-to-the-screen)
 - [The single-file build](#the-single-file-build)
+- [On a phone](#on-a-phone)
 - [The dev server](#the-dev-server)
 - [Decisions worth keeping](#decisions-worth-keeping)
 - [Troubleshooting](#troubleshooting)
@@ -502,6 +503,79 @@ The one thing that did have to be said out loud in the move: Python's text mode
 silently normalises CRLF on read and Node hands back exactly what is on disk,
 which was worth about 3 KB of stray `\r` inside the embedded shader strings.
 `readText()` in `build.mjs` does it explicitly now.
+
+## On a phone
+
+The app is responsive and the camera API is the same one, so it runs on a
+phone as-is. Four things are different enough to be handled explicitly, all
+keyed off `(pointer: coarse)` — the *primary* pointer, so a laptop with a
+touchscreen keeps the mouse-sized interface.
+
+**Saving goes through the share sheet.** A phone has no useful downloads
+folder, and on iOS an `<a download>` tends to open a preview rather than save
+anything; `navigator.share({files})` is the only route from a web page to the
+camera roll, and it reaches Messages and everything else in the same step. The
+capability is detected with `navigator.canShare({files})` rather than
+`navigator.share`, because carrying files is a separate capability from sharing
+a link and browsers exist with the second and not the first.
+
+Dismissing the sheet throws `AbortError`, and that case deliberately does
+*not* fall back to a download — the person just declined to save the file, and
+saving it anyway would be the opposite of what they asked. Every other failure
+does fall through to the download, which always works. That matters more than
+it looks: `navigator.share` needs transient user activation, and by the time
+`MediaRecorder.onstop` has flushed the last chunk, the click that stopped the
+take may have aged out of the activation window. When it does, the file still
+lands.
+
+**Front and back, not device ids.** Android enumerates the wide, ultrawide and
+depth sensors as separate `videoinput` devices, so cycling ids lands on lenses
+nobody asked for. On touch the picker becomes a switch-camera button driving
+`facingMode`, and the "previous camera" button is hidden because with two
+facings it is the same button pressed twice.
+
+**The mirror follows the lens.** Front camera mirrored, because that is what a
+person expects of their own face; back camera not, because it is pointed at
+the world and flipping that makes text unreadable. Applied only when the facing
+actually changes, so a manual toggle survives a resolution change or a reopen
+of the same camera.
+
+**Hit targets and viewport units.** Everything in the transport row was drawn
+for a mouse — the stack buttons are 21px against a ~44px floor for a
+fingertip — so the sizes lift under `(pointer: coarse)` without touching the
+desktop layout. `touch-action: manipulation` removes the ~300ms a browser holds
+a tap in case it becomes a double-tap zoom. The shell is `100dvh` rather than
+`100%`, because iOS Safari resolves `100%` against the *largest* viewport and
+puts the control bar under the browser toolbar; and the control bar carries
+`env(safe-area-inset-bottom)` so it clears the home indicator.
+
+### What is measured rather than guessed
+
+Mobile GPUs are tile-based deferred renderers: every full-screen pass flushes
+the tile buffer to main memory and reads it back, so a six-deep stack costs six
+round-trips that are nearly free on a desktop card. On top of that, per-layer
+double-buffering means six layers at 1080p is about 100 MB of texture memory
+before the source frame, which is enough for iOS Safari to discard the tab.
+
+There is no way to predict from a user agent string what a given phone will do
+with that, so nothing is capped in advance. Instead the three genuinely
+expensive effects are marked `(heavy)` in the list — Bokeh at 128 taps per
+pixel, Kuwahara at ~196, Frosted Glass at 20 — and the render loop watches the
+frame rate it actually gets. Under 20fps sustained for two seconds, it says so
+once, in the readout.
+
+Once, and as a toast rather than the stage dialog, on purpose. Being slow is
+not an error: the picture is still there and still worth looking at, and
+covering it with something undismissable to complain about the frame rate
+would be a worse experience than the frame rate.
+
+### Still unverified
+
+Whether `canvas.captureStream()` works on current iOS Safari. It was missing or
+buggy there for years. If it does not, recording on an iPhone is impossible
+from a web page regardless of anything above, and that one fact is what would
+decide whether this ever wants to be a native app. Everything else here is
+already better served by the web version.
 
 ## The dev server
 

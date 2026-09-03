@@ -73,6 +73,20 @@ export const CATALOGUE = [
   ]],
 ];
 
+/*
+ * The effects that cost enough per pixel to be worth warning about.
+ *
+ * Bokeh takes 128 taps per pixel, Kuwahara up to ~196, Frosted Glass 20. On a
+ * desktop GPU that is a rounding error; on a phone it is the difference
+ * between sixty frames and eight, because a tile-based mobile GPU is paying
+ * for every one of those texture reads out of a much smaller memory budget.
+ *
+ * Marked rather than hidden or capped. The whole app is a box of expensive
+ * toys and the answer to "this one is slow" is to know before you pick it,
+ * not to have it quietly removed from the list.
+ */
+export const HEAVY = new Set(["Bokeh", "Kuwahara", "Frosted Glass"]);
+
 // Uniforms the renderer sets every frame. An effect that doesn't mention one
 // gets it optimised out by the driver, so every location lookup can come back
 // null and every write has to be guarded.

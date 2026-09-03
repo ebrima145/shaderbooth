@@ -95,6 +95,71 @@ function download(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+/**
+ * Whether to hand the file to the system share sheet instead of downloading.
+ *
+ * Only on touch-primary devices, and this is the point of the whole detour: a
+ * phone has no useful "downloads folder", and on iOS an `<a download>` tends
+ * to open a preview rather than save anything. The share sheet is the only
+ * route from a web page to the camera roll, and it is also how the file
+ * reaches Messages or anywhere else in one step.
+ *
+ * Desktop deliberately keeps the download. A share sheet there is a worse
+ * answer to "save this" than simply saving it.
+ *
+ * canShare rather than share: carrying files is a separate capability from
+ * sharing a link, and browsers exist that have the second without the first.
+ */
+function preferShare(file) {
+  if (!matchMedia("(pointer: coarse)").matches) return false;
+  try {
+    return !!(navigator.canShare && navigator.canShare({ files: [file] }));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Put the finished file somewhere the person can keep it.
+ *
+ * Resolves with {name, shared} so the caller can be honest about which
+ * happened, or null when the share sheet was dismissed.
+ */
+async function save(blob, filename, type) {
+  const file = new File([blob], filename, { type });
+
+  if (preferShare(file)) {
+    try {
+      await navigator.share({ files: [file] });
+      return { name: filename, shared: true };
+    } catch (exc) {
+      // AbortError is the person closing the sheet. That is a decision, and
+      // quietly downloading the file anyway would save something they just
+      // declined to save. Anything else - no transient activation left after
+      // MediaRecorder flushed, a browser that lied about canShare - falls
+      // through to the download, which always works.
+      if (exc && exc.name === "AbortError") return null;
+    }
+  }
+
+  download(blob, filename);
+  return { name: filename, shared: false };
+}
+
+/**
+ * A bitrate that suits the frame size, rather than one number for every size.
+ *
+ * A flat 12 Mbps was absurd at 640x480 and starved 4K. ~0.15 bits per pixel
+ * per frame is a reasonable H.264 target for this kind of material, which is
+ * high-motion and full of the fine noise the analog effects add - grain and
+ * dither are the worst case an encoder can be handed, so this sits deliberately
+ * above what a talking head would need.
+ */
+function bitrateFor(width, height, fps) {
+  const bits = width * height * fps * 0.15;
+  return Math.round(Math.min(Math.max(bits, 2e6), 40e6));
+}
+
 export class Recorder {
   constructor(canvas, fps = 30) {
     this.canvas = canvas;
@@ -116,7 +181,7 @@ export class Recorder {
     return this.recording ? (performance.now() - this.startedAt) / 1000 : 0;
   }
 
-  start(bitsPerSecond = 12000000) {
+  start(bitsPerSecond = null) {
     if (this.recording) return false;
     const codec = pickCodec();
     if (!codec) throw new Error("This browser cannot record video from a canvas.");
@@ -128,7 +193,8 @@ export class Recorder {
     this.extension = codec.extension;
     this.recorder = new MediaRecorder(stream, {
       mimeType: codec.mimeType,
-      videoBitsPerSecond: bitsPerSecond,
+      videoBitsPerSecond: bitsPerSecond
+        || bitrateFor(this.canvas.width, this.canvas.height, this.fps),
     });
     this.recorder.ondataavailable = (event) => {
       if (event.data && event.data.size) this.chunks.push(event.data);
@@ -141,18 +207,19 @@ export class Recorder {
     return true;
   }
 
-  /** Stop and save. Resolves with the filename written. */
+  /**
+   * Stop and save. Resolves with {name, shared}, or null if the take was
+   * discarded at the share sheet.
+   */
   stop() {
     return new Promise((resolve) => {
       if (!this.recorder || this.recorder.state === "inactive") return resolve(null);
-      this.recorder.onstop = () => {
+      this.recorder.onstop = async () => {
         const type = this.recorder.mimeType || "video/webm";
         const blob = new Blob(this.chunks, { type });
         this.chunks = [];
         this.recorder = null;
-        const filename = downloadName(this.extension);
-        download(blob, filename);
-        resolve(filename);
+        resolve(await save(blob, downloadName(this.extension), type));
       };
       this.recorder.stop();
     });
@@ -165,11 +232,9 @@ export class Recorder {
   /** A single PNG of the output, at the camera's own resolution. */
   snapshot() {
     return new Promise((resolve) => {
-      this.canvas.toBlob((blob) => {
+      this.canvas.toBlob(async (blob) => {
         if (!blob) return resolve(null);
-        const filename = downloadName("png");
-        download(blob, filename);
-        resolve(filename);
+        resolve(await save(blob, downloadName("png"), "image/png"));
       }, "image/png");
     });
   }

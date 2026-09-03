@@ -18,7 +18,7 @@
  * whole of it can be a folder of static files.
  */
 
-import { EffectLibrary, loadShaderSources } from "./effects.js";
+import { EffectLibrary, HEAVY, loadShaderSources } from "./effects.js";
 import { EffectChain, MAX_LAYERS } from "./chain.js";
 import { Renderer } from "./renderer.js";
 import { Camera, RESOLUTIONS } from "./camera.js";
@@ -60,6 +60,17 @@ const dom = {
 
 const STORE_KEY = "shaderbooth";
 
+/*
+ * Whether the primary input is a finger.
+ *
+ * "(pointer: coarse)" describes the *primary* pointer, which is what decides
+ * the interface: a laptop with a touchscreen still wants the mouse-sized one.
+ * Read once, because it does not change without a reload, and used for three
+ * separate decisions - flip instead of cycle, share instead of download, and
+ * bigger hit targets.
+ */
+const TOUCH = matchMedia("(pointer: coarse)").matches;
+
 const app = {
   library: null,
   chain: null,
@@ -72,6 +83,10 @@ const app = {
   fps: 0,
   toast: "",
   toastUntil: 0,
+  // How long the frame rate has been on the floor, and whether we have already
+  // said so. See noticeSlowness().
+  slowSince: 0,
+  warnedSlow: false,
 };
 
 // --- messages over the picture ---------------------------------------------
@@ -182,6 +197,9 @@ function buildEffectMenu() {
       // one that is visibly broken.
       option.disabled = !effect.ok;
       if (!effect.ok) option.textContent += "  (failed)";
+      // Named rather than hidden: the cost is worth knowing before you pick,
+      // and on a phone these three are the difference between 60fps and 8.
+      else if (HEAVY.has(effect.name)) option.textContent += "  (heavy)";
       group.appendChild(option);
     }
     dom.effect.appendChild(group);
@@ -293,17 +311,29 @@ function editStack(action) {
 
 // --- the camera -------------------------------------------------------------
 
-async function startCamera(deviceId = null) {
+async function startCamera({ deviceId = null, facing = null } = {}) {
   message("Waiting for the camera…");
+  const before = app.camera.facing;
   try {
     const [width, height] = dom.resolution.value.split("x").map(Number);
-    await app.camera.open(deviceId, width, height);
+    await app.camera.open({ deviceId, facing, width, height });
   } catch (exc) {
     message("No picture", String(exc.message || exc), "error");
     app.renderer.clear();
     refresh();
     return false;
   }
+
+  // The mirror follows the lens. A front camera should read as a mirror,
+  // because that is what a person expects of their own face; a back camera
+  // should read as a window, because it is pointed at the world and flipping
+  // that makes text unreadable. Only on an actual change, so that a manual
+  // toggle survives a resolution change or a reopen of the same camera.
+  if (app.camera.facing && app.camera.facing !== before) {
+    app.renderer.mirror = app.camera.isFrontFacing;
+    reseed();
+  }
+
   message("");
   buildDeviceMenu();
   refresh();
@@ -319,9 +349,21 @@ function stopCamera() {
   refresh();
 }
 
+/**
+ * Move to another camera.
+ *
+ * On a phone that means the other side of the device, which is the only
+ * distinction anyone means; on a desktop it means the next attached camera in
+ * the list.
+ */
 async function stepCamera(delta) {
+  if (TOUCH) return flipCamera();
   const next = app.camera.nextDevice(delta);
-  if (next) await startCamera(next);
+  if (next) await startCamera({ deviceId: next });
+}
+
+async function flipCamera() {
+  await startCamera({ facing: app.camera.otherFacing() });
 }
 
 // --- the loop ---------------------------------------------------------------
@@ -347,6 +389,7 @@ function frame() {
   }
   app.renderer.present();
   updateReadout(now);
+  noticeSlowness(now);
 }
 
 /*
@@ -355,6 +398,32 @@ function frame() {
  * is. Recording outranks the rest because it is the only one you cannot
  * recover if you miss it.
  */
+/**
+ * Mention it once when the frame rate is on the floor.
+ *
+ * Measured rather than predicted: there is no way to guess from a user agent
+ * string what a given phone will do with six passes of Kuwahara, so the app
+ * watches what it actually gets. Sustained for two seconds before saying
+ * anything, because the frames right after a camera opens or a stack changes
+ * are always slow and warning about those would be noise. Once per session,
+ * because the readout carries the live number anyway and repeating a complaint
+ * about something you already chose to do is nagging.
+ *
+ * Deliberately a toast rather than the stage dialog. Being slow is not an
+ * error - the picture is still there and still worth looking at - and covering
+ * it with something you cannot dismiss to say so would be a worse experience
+ * than the low frame rate.
+ */
+function noticeSlowness(now) {
+  const bad = app.camera.live && app.fps > 0 && app.fps < 20;
+  if (!bad) { app.slowSince = 0; return; }
+  if (!app.slowSince) { app.slowSince = now; return; }
+  if (app.warnedSlow || now - app.slowSince < 2000) return;
+
+  app.warnedSlow = true;
+  toast(app.fps + "fps - try a smaller size or fewer layers", 6);
+}
+
 function updateReadout(now) {
   const set = (text, tone) => {
     dom.readout.textContent = text;
@@ -385,7 +454,7 @@ function updateReadout(now) {
 
 function wire() {
   dom.play.addEventListener("click", () => {
-    if (app.camera.live) stopCamera(); else startCamera(dom.device.value || null);
+    if (app.camera.live) stopCamera(); else startCamera({ deviceId: dom.device.value || null });
   });
   dom.prev.addEventListener("click", () => stepCamera(-1));
   dom.next.addEventListener("click", () => stepCamera(1));
@@ -396,9 +465,13 @@ function wire() {
     refresh();
   });
 
-  dom.device.addEventListener("change", () => startCamera(dom.device.value));
+  dom.device.addEventListener("change", () => startCamera({ deviceId: dom.device.value }));
   dom.resolution.addEventListener("change", () => {
-    if (app.camera.live) startCamera(dom.device.value || null);
+    if (!app.camera.live) return;
+    // Reopening for a new size: keep whichever side of the phone is showing,
+    // rather than falling back to a deviceId that may name a different lens.
+    if (TOUCH && app.camera.facing) startCamera({ facing: app.camera.facing });
+    else startCamera({ deviceId: dom.device.value || null });
   });
 
   dom.effect.addEventListener("change", () => {
@@ -426,13 +499,13 @@ function wire() {
     if (event.target === dom.help) dom.help.hidden = true;
   });
 
-  dom.start.addEventListener("click", () => startCamera(dom.device.value || null));
+  dom.start.addEventListener("click", () => startCamera({ deviceId: dom.device.value || null }));
 
   // The dialog has a button now, but the whole overlay stays clickable: on a
   // phone it is a much bigger target than anything inside it.
   dom.message.addEventListener("click", (event) => {
     if (event.target === dom.message && !app.camera.live) {
-      startCamera(dom.device.value || null);
+      startCamera({ deviceId: dom.device.value || null });
     }
   });
 
@@ -449,8 +522,7 @@ function wire() {
 async function toggleRecording() {
   if (!app.recorder) return;
   if (app.recorder.recording) {
-    const filename = await app.recorder.stop();
-    toast("saved " + (filename || ""), 3);
+    reportSave(await app.recorder.stop());
   } else {
     if (!app.renderer.hasOutput) return toast("nothing to record", 2);
     try {
@@ -464,8 +536,19 @@ async function toggleRecording() {
 
 async function takeSnapshot() {
   if (!app.renderer.hasOutput) return toast("nothing to save", 2);
-  const filename = await app.recorder.snapshot();
-  toast("saved " + (filename || ""), 3);
+  reportSave(await app.recorder.snapshot());
+}
+
+/**
+ * Say what actually happened to the file.
+ *
+ * Three outcomes, and claiming the wrong one is worse than saying nothing: it
+ * was downloaded, it went to the share sheet and from there to wherever the
+ * person chose, or they dismissed the sheet and there is no file at all.
+ */
+function reportSave(result) {
+  if (!result) return toast("not saved", 2);
+  toast((result.shared ? "shared " : "saved ") + result.name, 3);
 }
 
 function toggleFullscreen() {
@@ -490,7 +573,7 @@ function onKey(event) {
     else if (document.fullscreenElement) document.exitFullscreen();
     else document.activeElement?.blur?.();
   } else if (key === " ") {
-    if (app.camera.live) stopCamera(); else startCamera(dom.device.value || null);
+    if (app.camera.live) stopCamera(); else startCamera({ deviceId: dom.device.value || null });
   } else if (key === "Tab") {
     stepCamera(1);
   } else if (event.ctrlKey && (key === "ArrowLeft" || key === "ArrowRight")) {
@@ -532,6 +615,21 @@ function onKey(event) {
   event.preventDefault();
 }
 
+/**
+ * What changes when the primary input is a finger.
+ *
+ * Only the parts that cannot be done in CSS. With two cameras "previous" and
+ * "next" are the same button pressed twice, so one of them goes and the other
+ * becomes a flip - the affordance every phone camera app has had for fifteen
+ * years, in the place the hand already is.
+ */
+function applyTouchLayout() {
+  document.documentElement.classList.add("touch");
+  dom.prev.hidden = true;
+  dom.next.title = "Switch camera";
+  dom.next.setAttribute("aria-label", "Switch camera");
+}
+
 // --- boot -------------------------------------------------------------------
 
 async function boot() {
@@ -559,6 +657,8 @@ async function boot() {
   app.library = new EffectLibrary(app.renderer.gl, sources);
   app.chain = new EffectChain(app.library);
   app.recorder = new Recorder(dom.canvas, 30);
+
+  if (TOUCH) applyTouchLayout();
 
   buildEffectMenu();
   buildResolutionMenu();
