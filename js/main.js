@@ -410,8 +410,7 @@ function refresh() {
   });
 
   dom.effect.value = chain.effect.name;
-  dom.amount.value = Math.round(chain.amount * 100);
-  setAmountReadout();
+  syncAmount();
 
   dom.add.disabled = chain.length >= MAX_LAYERS;
   dom.del.disabled = chain.length <= 1;
@@ -433,16 +432,27 @@ function refresh() {
 }
 
 /**
- * The number beside the trackbar, and the trackbar's own fill.
+ * Put the whole trackbar in step with the layer: the thumb, the green behind
+ * it, and the number beside it.
  *
- * Chromium has no native progress on a range input, so the green is a
- * gradient sized by a custom property. Without it the one control whose whole
+ * All three, from one place, because they were not. The thumb was set in
+ * refresh() while the other two were set here, so the wheel - which calls this
+ * and not that - moved the fill and the number and left the thumb standing
+ * where it was. Anything that can drift apart eventually does; the fix is for
+ * there to be nowhere left to update only two of the three.
+ *
+ * Setting `value` from a value that came out of `value` round-trips exactly,
+ * so this is a no-op on the drag path rather than a fight with it.
+ *
+ * The green is a gradient sized by a custom property because Chromium has no
+ * native progress on a range input, and without it the one control whose whole
  * job is holding a value never looks like it is holding one.
  */
-function setAmountReadout() {
+function syncAmount() {
   const amount = app.chain.amount;
-  dom.amountValue.textContent = amount.toFixed(2);
+  dom.amount.value = Math.round(amount * 100);
   dom.amount.style.setProperty("--fill", Math.round(amount * 100) + "%");
+  dom.amountValue.textContent = amount.toFixed(2);
 }
 
 /*
@@ -823,13 +833,13 @@ function wire() {
   dom.amount.addEventListener("wheel", (event) => {
     event.preventDefault();
     app.chain.setAmount(app.chain.amount + (event.deltaY < 0 ? 0.02 : -0.02));
-    setAmountReadout();
+    syncAmount();
     saveLook();
   }, { passive: false });
 
   dom.amount.addEventListener("input", () => {
     app.chain.setAmount(dom.amount.value / 100);
-    setAmountReadout();
+    syncAmount();
     saveLook();
   });
 
