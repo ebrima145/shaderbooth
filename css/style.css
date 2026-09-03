@@ -877,14 +877,18 @@ input[type="range"]::-moz-range-thumb {
  * bands stay in flow and the picture *grows* into the space instead of being
  * covered by chrome sitting on top of it. That needs a real number to animate
  * from - max-height has nothing to interpolate against `none` - so main.js
- * measures the bar and publishes it as --chrome-h whenever the stack changes.
+ * pins the bar's own height inline at the moment of hiding, and releases it
+ * once the bar is open again.
  */
 #titlebar, #controlbar {
   overflow: hidden;
   transition: max-height 300ms var(--ease), opacity 220ms var(--ease),
               padding 300ms var(--ease);
 }
-#controlbar { max-height: var(--chrome-h, 60vh); }
+/* Unclamped at rest, so the bar can never be capped by a stale number. --pin
+   is written by main.js at the moment of hiding, giving the collapse a real
+   height to animate away from, and released once the bar is open again. */
+#controlbar { max-height: var(--pin, none); }
 #titlebar { max-height: 40px; }
 
 /* Padding has to go too. Under border-box a max-height of 0 collapses the

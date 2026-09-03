@@ -95,6 +95,7 @@ const app = {
   slowSince: 0,
   warnedSlow: false,
   idleTimer: 0,
+  unpinTimer: 0,
 };
 
 // How long the bars wait after your last touch before folding away. Long
@@ -295,7 +296,6 @@ function refresh() {
   dom.app.classList.toggle("live", app.camera.live);
   // Keeps the title bar up while a take runs, so the tally never hides.
   dom.app.classList.toggle("recording", recording);
-  measureChrome();
 
   dom.status.textContent = chain.describe();
   saveLook();
@@ -315,43 +315,60 @@ function setAmountReadout() {
 }
 
 /*
- * The bars, and getting them out of the way.
+ * Folding the bars away, and getting them back.
  *
- * max-height cannot animate against `none`, so the control bar's real height
- * has to be published as a number for the collapse to have something to
- * interpolate from. It changes whenever the stack does - six tabs wrap where
- * two do not - so it is remeasured on every refresh rather than once at boot.
- * Two pixels of slack, because a max-height a fraction under the true height
- * would clip the bottom row for the entire time the bar is open.
+ * max-height has nothing to interpolate against `none`, so collapsing needs a
+ * real number to animate away from. That number is taken at the moment of
+ * hiding and pinned inline, then released once the bar is open again - rather
+ * than being kept in a variable that then has to be maintained.
+ *
+ * The ordering is the entire point. Measuring after *showing* reads a bar that
+ * is still a few pixels tall because its own transition has only just started,
+ * pins the ceiling to that, and leaves the bar permanently stuck part-open. It
+ * looks like the animation failing; it is actually the measurement being taken
+ * a frame too early.
+ *
+ * Between hide and reveal the only thing that can change the bar's height on a
+ * phone is a rotation, which is handled by simply showing the chrome again.
  */
-function measureChrome() {
-  if (!TOUCH || dom.app.classList.contains("chrome-hidden")) return;
-  dom.app.style.setProperty("--chrome-h", (dom.controlbar.offsetHeight + 2) + "px");
-}
-
 function chromeHidden() {
   return dom.app.classList.contains("chrome-hidden");
+}
+
+function hideChrome() {
+  if (chromeHidden()) return;
+  clearTimeout(app.unpinTimer);
+  // Pin the height it has right now, flush the layout so the browser has a
+  // number to start from, then collapse.
+  // Written as a custom property, not as an inline max-height: an inline
+  // declaration outranks any selector, so pinning it directly would beat the
+  // rule that collapses the bar and it would only ever shrink by its padding.
+  dom.controlbar.style.setProperty("--pin", dom.controlbar.offsetHeight + "px");
+  void dom.controlbar.offsetHeight;
+  dom.app.classList.add("chrome-hidden");
+}
+
+function revealChrome() {
+  if (!chromeHidden()) return;
+  dom.app.classList.remove("chrome-hidden");
+  // Released once it is fully open, so the bar is free to size itself again
+  // when the stack grows a row. Comfortably past the 300ms collapse.
+  clearTimeout(app.unpinTimer);
+  app.unpinTimer = setTimeout(() => {
+    if (!chromeHidden()) dom.controlbar.style.removeProperty("--pin");
+  }, 360);
 }
 
 /** Bring the bars back, and restart the countdown to hiding them again. */
 function showChrome() {
   clearTimeout(app.idleTimer);
-  if (chromeHidden()) {
-    dom.app.classList.remove("chrome-hidden");
-    // Remeasure once the bar is laid out again: while it was collapsed its
-    // offsetHeight was zero, so anything that changed the stack in the
-    // meantime left --chrome-h stale.
-    requestAnimationFrame(measureChrome);
-  }
+  revealChrome();
   // Only ever armed on a phone, and only with a picture worth uncovering. A
   // dialog counts as being mid-task, so the bars stay put behind it.
   if (!TOUCH || !app.camera.live) return;
   if (!dom.help.hidden || !dom.settings.hidden) return;
   app.idleTimer = setTimeout(() => {
-    if (dom.help.hidden && dom.settings.hidden && app.camera.live) {
-      measureChrome();
-      dom.app.classList.add("chrome-hidden");
-    }
+    if (dom.help.hidden && dom.settings.hidden && app.camera.live) hideChrome();
   }, CHROME_IDLE_MS);
 }
 
@@ -360,8 +377,7 @@ function toggleChrome() {
   if (!TOUCH || !app.camera.live) return;
   if (chromeHidden()) return showChrome();
   clearTimeout(app.idleTimer);
-  measureChrome();
-  dom.app.classList.add("chrome-hidden");
+  hideChrome();
 }
 
 function openSheet(sheet) {
@@ -612,8 +628,10 @@ function wire() {
   });
 
   window.addEventListener("keydown", onKey);
-  window.addEventListener("resize", measureChrome);
-  window.addEventListener("orientationchange", () => setTimeout(measureChrome, 250));
+  window.addEventListener("orientationchange", () => {
+    dom.controlbar.style.removeProperty("--pin");
+    showChrome();
+  });
   window.addEventListener("beforeunload", () => app.camera.stop());
 }
 
