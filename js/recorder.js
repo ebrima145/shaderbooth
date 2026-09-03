@@ -61,11 +61,24 @@ function pickCodec() {
   return null;
 }
 
-function stamp() {
+/**
+ * What a saved take or still is called.
+ *
+ * Named for the app rather than for the device, so a file that has travelled
+ * somewhere else still says where it came from - which is the whole point of a
+ * thing people are meant to share. The timestamp is ordered
+ * largest-unit-first, so a folder of them sorts chronologically by name, and
+ * it goes to the second because holding the shortcut down produces several
+ * stills in a hurry.
+ */
+const NAME_PREFIX = "shaderbooth";
+
+function downloadName(extension) {
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  return now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate())
+  const stamp = now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate())
     + "-" + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+  return NAME_PREFIX + "-" + stamp + "." + extension;
 }
 
 function download(blob, filename) {
@@ -137,7 +150,7 @@ export class Recorder {
         const blob = new Blob(this.chunks, { type });
         this.chunks = [];
         this.recorder = null;
-        const filename = "camera-" + stamp() + "." + this.extension;
+        const filename = downloadName(this.extension);
         download(blob, filename);
         resolve(filename);
       };
@@ -154,7 +167,7 @@ export class Recorder {
     return new Promise((resolve) => {
       this.canvas.toBlob((blob) => {
         if (!blob) return resolve(null);
-        const filename = "camera-" + stamp() + ".png";
+        const filename = downloadName("png");
         download(blob, filename);
         resolve(filename);
       }, "image/png");
