@@ -48,6 +48,8 @@ const dom = {
   mirror: el("btn-mirror"),
   rec: el("btn-rec"),
   snap: el("btn-snap"),
+  quickRec: el("btn-quick-rec"),
+  quickSnap: el("btn-quick-snap"),
   add: el("btn-add"),
   del: el("btn-del"),
   down: el("btn-down"),
@@ -292,6 +294,7 @@ function refresh() {
   dom.play.classList.toggle("playing", app.camera.live);
   const recording = !!(app.recorder && app.recorder.recording);
   dom.rec.classList.toggle("on", recording);
+  dom.quickRec.classList.toggle("on", recording);
   // Opens the lens in the title bar while there is a picture.
   dom.app.classList.toggle("live", app.camera.live);
   // Keeps the title bar up while a take runs, so the tally never hides.
@@ -589,6 +592,12 @@ function wire() {
   dom.rec.addEventListener("click", toggleRecording);
   dom.snap.addEventListener("click", takeSnapshot);
 
+  // The floating pair, which only exists while the bars are away. Deliberately
+  // not wired to showChrome: capturing is the one thing you do *while*
+  // watching, so reaching for the shutter must not put the furniture back.
+  dom.quickRec.addEventListener("click", toggleRecording);
+  dom.quickSnap.addEventListener("click", takeSnapshot);
+
   dom.full.addEventListener("click", toggleFullscreen);
   dom.settingsOpen.addEventListener("click", () => openSheet(dom.settings));
   dom.settingsClose.addEventListener("click", () => closeSheet(dom.settings));
@@ -799,8 +808,10 @@ async function boot() {
   refresh();
 
   if (!Recorder.available) {
-    dom.rec.disabled = true;
-    dom.rec.title = "This browser cannot record video from a canvas";
+    for (const button of [dom.rec, dom.quickRec]) {
+      button.disabled = true;
+      button.title = "This browser cannot record video from a canvas";
+    }
   }
 
   requestAnimationFrame(frame);

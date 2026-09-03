@@ -167,6 +167,11 @@ saves a still.
   are the first thing to drop. If the frame rate sits under 20 the readout says
   so, once.
 
+- **A shutter floats over the picture while the bars are away** — record and
+  still, and nothing else. Using it does not bring the bars back, because
+  capturing is the one thing you want to do *while* watching. A take in
+  progress still shows its tally in the title bar.
+
 - **On a phone the bars fold away** a few seconds after you stop touching
   them, and a tap on the picture brings them back — the chrome was taking 47%
   of a 375x812 screen. A take in progress keeps its title bar, so the tally and

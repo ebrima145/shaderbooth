@@ -583,6 +583,24 @@ its height changes when six tabs wrap where two did not - and published as
 padding, which leaves a 16px strip of blue along the bottom of the screen
 looking like a rendering fault.
 
+**Capture survives the fold.** Record and still float over the picture and
+appear exactly when the bars leave, because otherwise the fold costs you the
+shot - reveal, then reach for record, is two taps and the bars are back up by
+the time you have taken it. Using the floating pair deliberately does *not*
+call `showChrome()`: capturing is the one thing you want to do while watching,
+so reaching for the shutter must not put the furniture back.
+
+Only those two. Everything else in the control bar is adjustment - which
+effect, how much, which layer - and adjusting is a reason to want the bars
+anyway. They are also not shown alongside the bars, because the transport row
+already carries both buttons a few pixels below, and two live record buttons on
+one screen is a question nobody should have to answer.
+
+The container spans the full width so the pair can be centred, which means it
+has to be `pointer-events: none` with the buttons themselves set back to
+`auto`. Without that, tapping the picture anywhere level with the shutter would
+hit an invisible bar instead of bringing the chrome back.
+
 **A take in progress keeps its title bar.** That is where the tally and the
 running clock live on a phone, and hiding "you are still recording" in order to
 show more of the picture is the one trade this should never make. The control

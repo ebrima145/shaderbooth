@@ -28,6 +28,13 @@
   <div id="stage">
     <canvas id="output" width="1280" height="720"></canvas>
 
+    <div id="quick" aria-hidden="false">
+      <button id="btn-quick-rec" class="round rec-dot" title="Record the output (R)"
+              aria-label="Record the output"></button>
+      <button id="btn-quick-snap" class="round snap-icon" title="Save a still (S)"
+              aria-label="Save a still"></button>
+    </div>
+
     <div id="message">
       <div class="dialog">
         <p id="msg-title">Start the camera</p>
@@ -51,8 +58,8 @@
 
       <span class="divider"></span>
 
-      <button id="btn-rec" class="round rec" title="Record the output (R)" aria-label="Record the output"></button>
-      <button id="btn-snap" class="round" title="Save a still (S)" aria-label="Save a still"></button>
+      <button id="btn-rec" class="round rec-dot" title="Record the output (R)" aria-label="Record the output"></button>
+      <button id="btn-snap" class="round snap-icon" title="Save a still (S)" aria-label="Save a still"></button>
 
       <span id="readout">&ndash;</span>
 

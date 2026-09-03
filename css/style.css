@@ -464,13 +464,13 @@ kbd {
   opacity: 0.42;
 }
 
-#btn-rec::before {
+.rec-dot::before {
   width: 13px; height: 13px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #ff9b9b, #d40000 72%);
 }
-#btn-rec.on::before { background: radial-gradient(circle at 35% 30%, #ffc4c4, #ff1c1c 72%); }
-#btn-rec.on { animation: pulse 1.3s ease-in-out infinite; }
+.rec-dot.on::before { background: radial-gradient(circle at 35% 30%, #ffc4c4, #ff1c1c 72%); }
+.rec-dot.on { animation: pulse 1.3s ease-in-out infinite; }
 @keyframes pulse {
   50% {
     box-shadow: inset 0 1px 0 #fff, 0 0 0 4px rgba(224, 0, 0, 0.3),
@@ -478,13 +478,13 @@ kbd {
   }
 }
 
-#btn-snap::before {
+.snap-icon::before {
   width: 16px; height: 11px;
   border: 2px solid var(--ink);
   border-radius: 2px;
   background: radial-gradient(circle at 50% 55%, var(--ink) 0 2.6px, transparent 2.7px);
 }
-#btn-snap::after {
+.snap-icon::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -824,6 +824,53 @@ input[type="range"]::-moz-range-thumb {
   .field, .field.narrow { flex: 1 1 100%; }
 }
 
+/* --- the shutter, for when the bars are away ----------------------------- */
+
+/*
+ * Capture has to survive the chrome folding away, or the fold costs you the
+ * shot: reveal, then reach for record, is two taps and the bars are back up by
+ * the time you have taken it. So record and still float over the picture and
+ * appear exactly when the bars leave.
+ *
+ * Only these two. Everything else in the control bar is adjustment - which
+ * effect, how much, which layer - and adjusting is a reason to want the bars
+ * anyway. Capturing is the one thing you want to do *while* looking.
+ *
+ * They are not shown alongside the bars, because the transport row already has
+ * both buttons a few pixels below and two live record buttons on one screen is
+ * a question nobody should have to answer.
+ */
+#quick { display: none; }
+
+@media (pointer: coarse) {
+  #app.chrome-hidden #quick {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    /* The container spans the width, so it must not swallow taps meant for the
+       picture - tapping beside the shutter still brings the bars back. */
+    pointer-events: none;
+    animation: fade-in 260ms var(--ease) both;
+  }
+
+  #quick .round {
+    pointer-events: auto;
+    /* Deeper than the in-bar buttons: these sit on the picture rather than on
+       a panel, and the picture can be any colour at all. */
+    box-shadow: inset 0 1px 0 #fff, 0 2px 12px rgba(0, 0, 0, 0.6);
+  }
+  #btn-quick-rec { width: 62px; height: 62px; }
+  #btn-quick-snap { width: 48px; height: 48px; }
+  #btn-quick-rec::before { width: 26px; height: 26px; }
+  #btn-quick-snap::before { width: 26px; height: 18px; border-width: 3px; }
+  #btn-quick-snap::after { width: 10px; height: 4px; transform: translate(-3px, -13px); }
+}
+
 /* --- the source sheet ---------------------------------------------------- */
 
 /*
@@ -967,9 +1014,9 @@ input[type="range"]::-moz-range-thumb {
   }
   #btn-mirror::before { border-right-width: 10px; border-top-width: 9px; border-bottom-width: 9px; }
   #btn-mirror::after { border-left-width: 10px; border-top-width: 9px; border-bottom-width: 9px; }
-  #btn-rec::before { width: 20px; height: 20px; }
-  #btn-snap::before { width: 24px; height: 17px; border-width: 3px; }
-  #btn-snap::after { width: 9px; height: 4px; transform: translate(-3px, -12px); }
+  .rec-dot::before { width: 20px; height: 20px; }
+  .snap-icon::before { width: 24px; height: 17px; border-width: 3px; }
+  .snap-icon::after { width: 9px; height: 4px; transform: translate(-3px, -12px); }
 
   .tiny { width: 40px; height: 40px; font-size: 15px; }
   .chip { height: 38px; padding: 0 12px 0 8px; font-size: 13px; border-radius: 6px 6px 3px 3px; }
