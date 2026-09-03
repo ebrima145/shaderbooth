@@ -19,6 +19,7 @@ This is everything else.
 - [How a frame gets to the screen](#how-a-frame-gets-to-the-screen)
 - [The single-file build](#the-single-file-build)
 - [On a phone](#on-a-phone)
+- [On a desktop](#on-a-desktop)
 - [The dev server](#the-dev-server)
 - [Decisions worth keeping](#decisions-worth-keeping)
 - [Troubleshooting](#troubleshooting)
@@ -633,6 +634,61 @@ buggy there for years. If it does not, recording on an iPhone is impossible
 from a web page regardless of anything above, and that one fact is what would
 decide whether this ever wants to be a native app. Everything else here is
 already better served by the web version.
+
+## On a desktop
+
+Three things the phone work left behind, since all of it was gated on
+`(pointer: coarse)`.
+
+**The window maximises.** It was hard-capped at 1100x760, which on a 1440p
+monitor is under a quarter of the screen and on a 4K one is a tenth — and the
+picture inside it was the same size either way, which for an app whose whole
+content is a picture is the worst thing about it on a large display. The middle
+caption button is the third one the chrome always implied. It fills the browser
+while keeping the browser's own chrome, which is what makes it a different
+thing from fullscreen rather than a duplicate of it. The state is remembered in
+its own storage key, deliberately apart from the look: how big your window is
+says nothing about the picture and has no business in a shared link.
+
+**Fullscreen folds the bars away.** The machinery already existed for phones
+and was gated on touch; it now also opens in fullscreen, which is the one time
+someone has said in as many words that they want the picture and nothing else.
+A window that hid its own controls while sitting on a desktop would just be
+losing them. Moving the mouse is the desktop equivalent of tapping the picture,
+throttled to twice a second because `pointermove` fires per pixel and each call
+resets a timer. The floating shutter comes along, so a fullscreen session is
+still able to capture without bringing anything back.
+
+**Layer tabs drag.** Order is what this app is about, and rearranging it used to
+mean selecting a tab and then clicking an arrow — two steps for the interaction
+the whole thing is built around.
+
+Pointer events rather than HTML5 drag-and-drop, which cannot be styled, does not
+report positions usefully, and drags a ghost image nobody asked for. The tab
+centres are captured once at the start, from the layout before anything moved:
+the target has to be computed against where the tabs *were*, not against
+positions this drag is itself shifting. The target index is then simply the
+number of other tabs whose centre now sits left of the pointer, which is exactly
+the index a splice lands at.
+
+That is also why `EffectChain` grew `moveTo()` alongside `move()`. `move()`
+swaps two positions, which is right for the `,` and `.` keys but wrong for any
+drag longer than one place — it would leave everything you dragged past in the
+wrong order. `moveTo()` lifts the layer out and reinserts it, so the rest closes
+up by one in the direction it came from, which is what the animation shows and
+therefore what you expect. The layer object itself moves either way, so its
+feedback history travels with it.
+
+Dragging is mouse-only. On a phone the tab strip scrolls horizontally, and a
+horizontal drag cannot mean two things at once.
+
+**A drag also ends in a click, and that click is not a selection.** It cannot be
+suppressed with a flag on the tab, because the refresh that follows the reorder
+replaces every tab before the click arrives — so the click lands on a brand new
+element that knows nothing about the drag. It is caught at the container in the
+capture phase instead, by a listener that removes itself after 250ms either way.
+A flag that outlived its click would silently eat the next real one, which is a
+bug that would surface much later and look like nothing to do with dragging.
 
 ## The dev server
 

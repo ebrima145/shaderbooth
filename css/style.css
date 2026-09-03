@@ -151,6 +151,26 @@ body::after {
   from { opacity: 0; transform: translateY(14px) scale(0.985); }
 }
 
+/*
+ * Maximised.
+ *
+ * The window is capped at 1100x760, which on a 1440p monitor is under a
+ * quarter of the screen and on a 4K one is a tenth - and the picture inside it
+ * is the same size either way, which for an app whose whole content is a
+ * picture is the largest thing wrong with it on a desktop. This is the third
+ * caption button the chrome always implied, and it does what it says: the
+ * window fills the browser, keeping the browser's own chrome, which is what
+ * separates it from fullscreen.
+ */
+body.maximised { padding: 0; }
+body.maximised #app {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+body.maximised #titlebar::after { border-radius: 0; }
+
 /* --- title bar ----------------------------------------------------------- */
 
 #titlebar {
@@ -230,6 +250,24 @@ body::after {
   background: linear-gradient(180deg, #0b4fc2 0%, #1a6ae8 50%, #4d90ff 100%);
   transform: translateY(1px);
 }
+
+/* Outlined rather than solid, which is what a window caption button has always
+   looked like - and what keeps them reading as chrome rather than as controls
+   for the picture. */
+.cap { display: grid; place-items: center; }
+.cap svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+#btn-max .i-restore, body.maximised #btn-max .i-max { display: none; }
+body.maximised #btn-max .i-restore { display: block; }
 
 /* --- the picture --------------------------------------------------------- */
 
@@ -530,6 +568,32 @@ kbd {
   transform: translateY(-1px);
 }
 
+/*
+ * Dragging a tab to reorder it.
+ *
+ * Order is what this app is about, and changing it used to mean selecting a
+ * tab and then clicking an arrow - two steps for the interaction the whole
+ * thing is built around. Pointer-driven rather than HTML5 drag-and-drop, which
+ * cannot be styled and does not report positions usefully.
+ *
+ * Mouse only. On a phone the strip scrolls horizontally, and a horizontal drag
+ * cannot mean both things at once.
+ */
+@media (pointer: fine) {
+  .chip { cursor: grab; }
+  .chip:active { cursor: grabbing; }
+}
+
+/* The tab under the pointer follows it, so its transform must not be eased -
+   the ones sliding out of its way are the only things animating. */
+.chip.dragging {
+  transition: none;
+  z-index: 3;
+  cursor: grabbing;
+  box-shadow: 0 4px 12px rgba(0, 20, 60, 0.45);
+}
+#chips.reordering .chip { pointer-events: none; }
+
 .chip-n {
   display: grid;
   place-items: center;
@@ -804,8 +868,7 @@ input[type="range"]::-moz-range-thumb {
  */
 #quick { display: none; }
 
-@media (pointer: coarse) {
-  #app.chrome-hidden #quick {
+#app.chrome-hidden #quick {
     position: absolute;
     left: 0;
     right: 0;
@@ -816,16 +879,22 @@ input[type="range"]::-moz-range-thumb {
     gap: 26px;
     /* The container spans the width, so it must not swallow taps meant for the
        picture - tapping beside the shutter still brings the bars back. */
-    pointer-events: none;
-    animation: fade-in 260ms var(--ease) both;
-  }
+  pointer-events: none;
+  animation: fade-in 260ms var(--ease) both;
+}
 
-  #quick .round {
-    pointer-events: auto;
-    /* Deeper than the in-bar buttons: these sit on the picture rather than on
-       a panel, and the picture can be any colour at all. */
-    box-shadow: inset 0 1px 0 #fff, 0 2px 12px rgba(0, 0, 0, 0.6);
-  }
+#quick .round {
+  pointer-events: auto;
+  /* Deeper than the in-bar buttons: these sit on the picture rather than on a
+     panel, and the picture can be any colour at all. */
+  box-shadow: inset 0 1px 0 #fff, 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+#btn-quick-rec { width: 48px; height: 48px; }
+#btn-quick-snap { width: 40px; height: 40px; }
+#btn-quick-rec svg { width: 24px; height: 24px; }
+#btn-quick-snap svg { width: 20px; height: 20px; }
+
+@media (pointer: coarse) {
   #btn-quick-rec { width: 62px; height: 62px; }
   #btn-quick-snap { width: 48px; height: 48px; }
   #btn-quick-rec svg { width: 32px; height: 32px; }

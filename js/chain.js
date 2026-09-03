@@ -162,6 +162,29 @@ export class EffectChain {
     return true;
   }
 
+  /**
+   * Lift a layer out and drop it back in at another position.
+   *
+   * What dragging a tab does, and different from move() for any distance
+   * greater than one: move() swaps the two ends, which for a drag across three
+   * positions would leave the layer you dragged past in the wrong place. This
+   * takes the layer out and reinserts it, so everything between closes up by
+   * one in the direction it came from - which is what the animation shows and
+   * therefore what the person expects.
+   *
+   * The layer object itself moves, which is what keeps its feedback history
+   * with it; the renderer keys buffers off the object rather than the slot.
+   */
+  moveTo(from, to) {
+    if (from < 0 || from >= this.layers.length) return false;
+    to = Math.max(0, Math.min(this.layers.length - 1, to));
+    if (from === to) return false;
+    const [layer] = this.layers.splice(from, 1);
+    this.layers.splice(to, 0, layer);
+    this.active = to;
+    return true;
+  }
+
   // --- description ------------------------------------------------------
 
   names() { return this.layers.map((l) => l.effect.name); }

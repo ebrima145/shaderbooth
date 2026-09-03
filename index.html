@@ -21,6 +21,9 @@
        needs to say "the other one". -->
   <symbol id="i-flip" viewBox="0 0 24 24"><path d="M6.2 9.6A6.6 6.6 0 0 1 18 9.9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M18.9 5.9 19.6 11 14.7 10.2Z"/><path d="M17.8 14.4A6.6 6.6 0 0 1 6 14.1" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M5.1 18.1 4.4 13 9.3 13.8Z"/></symbol>
   <symbol id="i-mirror" viewBox="0 0 24 24"><path d="M10.3 6.7 4.7 12l5.6 5.3Z"/><path d="M13.7 6.7 19.3 12l-5.6 5.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 3.3v17.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2.6"/></symbol>
+  <symbol id="i-max" viewBox="0 0 24 24"><rect x="4.5" y="4.8" width="15" height="14.4" rx="1.2"/><path d="M4.5 8.4h15"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><path d="M8.6 8.6V5.2h10.2v10.2h-3.4"/><rect x="5.2" y="8.6" width="10.2" height="10.2" rx="1.1"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M4.6 9.4V4.6h4.8M19.4 9.4V4.6h-4.8M4.6 14.6v4.8h4.8M19.4 14.6v4.8h-4.8"/></symbol>
   <symbol id="i-rec" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2"/></symbol>
   <symbol id="i-cam" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M8.7 6.1h6.6l1.5 2.3H20a1.3 1.3 0 0 1 1.3 1.3v8.1a1.3 1.3 0 0 1-1.3 1.3H4a1.3 1.3 0 0 1-1.3-1.3V9.7A1.3 1.3 0 0 1 4 8.4h3.2ZM12 9.8a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4Z"/><circle cx="12" cy="13.5" r="1.5"/></symbol>
 </svg>
@@ -36,7 +39,8 @@
       <button id="btn-settings" class="cap dots" title="Camera and size"
               aria-label="Camera and size" hidden></button>
       <button id="btn-help" class="cap" title="Keys and about" aria-label="Keys and about">?</button>
-      <button id="btn-full" class="cap" title="Fullscreen (F)" aria-label="Fullscreen">&#9744;</button>
+      <button id="btn-max" class="cap" title="Maximise the window" aria-label="Maximise the window"><svg class="i-max" viewBox="0 0 24 24"><use href="#i-max"/></svg><svg class="i-restore" viewBox="0 0 24 24"><use href="#i-restore"/></svg></button>
+      <button id="btn-full" class="cap" title="Fullscreen (F)" aria-label="Fullscreen"><svg viewBox="0 0 24 24"><use href="#i-full"/></svg></button>
     </span>
   </div>
 

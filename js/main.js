@@ -55,6 +55,7 @@ const dom = {
   down: el("btn-down"),
   up: el("btn-up"),
   full: el("btn-full"),
+  max: el("btn-max"),
   titlebar: el("titlebar"),
   stage: el("stage"),
   controlbar: el("controlbar"),
@@ -68,6 +69,9 @@ const dom = {
 };
 
 const STORE_KEY = "shaderbooth";
+// Kept apart from the look, which travels in the URL: how big your window
+// is says nothing about the picture and has no business in a shared link.
+const WINDOW_KEY = "shaderbooth-window";
 
 /*
  * Whether the primary input is a finger.
@@ -278,6 +282,7 @@ function refresh() {
     chip.addEventListener("click", () => {
       if (chain.select(index)) refresh();
     });
+    if (!TOUCH) chip.addEventListener("pointerdown", (event) => startTabDrag(event, index));
     dom.chips.appendChild(chip);
   });
 
@@ -338,6 +343,18 @@ function chromeHidden() {
   return dom.app.classList.contains("chrome-hidden");
 }
 
+/*
+ * Whether the bars are allowed to fold away at all.
+ *
+ * On a phone, always - the screen is small and the chrome was half of it. On a
+ * desktop, only in fullscreen, because that is the one time someone has said
+ * in as many words that they want the picture and nothing else. A window that
+ * hid its own controls while sitting on a desktop would just be losing them.
+ */
+function chromeCanFold() {
+  return TOUCH || !!document.fullscreenElement;
+}
+
 function hideChrome() {
   if (chromeHidden()) return;
   clearTimeout(app.unpinTimer);
@@ -368,16 +385,31 @@ function showChrome() {
   revealChrome();
   // Only ever armed on a phone, and only with a picture worth uncovering. A
   // dialog counts as being mid-task, so the bars stay put behind it.
-  if (!TOUCH || !app.camera.live) return;
+  if (!chromeCanFold() || !app.camera.live) return;
   if (!dom.help.hidden || !dom.settings.hidden) return;
   app.idleTimer = setTimeout(() => {
     if (dom.help.hidden && dom.settings.hidden && app.camera.live) hideChrome();
   }, CHROME_IDLE_MS);
 }
 
+/*
+ * Maximise: the third caption button the chrome always implied.
+ *
+ * The window is capped at 1100x760, and on anything bigger than a laptop that
+ * leaves the picture the same size while the screen around it grows. This
+ * fills the browser and keeps the browser's own chrome, which is what makes it
+ * a different thing from fullscreen rather than a duplicate of it.
+ */
+function setMaximised(on) {
+  document.body.classList.toggle("maximised", on);
+  dom.max.title = on ? "Restore the window" : "Maximise the window";
+  dom.max.setAttribute("aria-label", dom.max.title);
+  try { localStorage.setItem(WINDOW_KEY, on ? "max" : ""); } catch { /* see loadLook */ }
+}
+
 /** What a tap on the picture does once there is a picture. */
 function toggleChrome() {
-  if (!TOUCH || !app.camera.live) return;
+  if (!chromeCanFold() || !app.camera.live) return;
   if (chromeHidden()) return showChrome();
   clearTimeout(app.idleTimer);
   hideChrome();
@@ -393,6 +425,90 @@ function openSheet(sheet) {
 function closeSheet(sheet) {
   sheet.hidden = true;
   showChrome();
+}
+
+/*
+ * Dragging a tab to a new position in the chain.
+ *
+ * Order is what this app is about, and rearranging it used to be two steps -
+ * select the tab, then click an arrow - for the interaction the whole thing is
+ * built around.
+ *
+ * Pointer events rather than HTML5 drag-and-drop, which cannot be styled, does
+ * not report positions usefully, and drags a ghost image nobody asked for.
+ *
+ * Mouse only. On a phone the strip scrolls horizontally and a horizontal drag
+ * cannot mean two things at once.
+ */
+function startTabDrag(event, from) {
+  if (event.button !== 0) return;
+  const strip = dom.chips;
+  const chips = [...strip.children];
+  const dragged = chips[from];
+  // Centres captured once, from the layout before anything moved: the target
+  // has to be computed against where the tabs *were*, not against positions
+  // that are themselves being shifted by this drag.
+  const centres = chips.map((c) => c.getBoundingClientRect().left + c.offsetWidth / 2);
+  const shift = dragged.offsetWidth + 3;   // the gap between tabs, from the CSS
+  const startX = event.clientX;
+  let to = from;
+  let moved = false;
+
+  const onMove = (move) => {
+    const dx = move.clientX - startX;
+    // A few pixels of slack, so a click that wobbles is still a click.
+    if (!moved && Math.abs(dx) < 5) return;
+    if (!moved) {
+      moved = true;
+      dragged.classList.add("dragging");
+      strip.classList.add("reordering");
+    }
+
+    // How many tabs, ignoring the one in hand, now sit left of the pointer.
+    // That count *is* the index it would land at.
+    const x = move.clientX;
+    to = 0;
+    centres.forEach((centre, i) => { if (i !== from && centre < x) to += 1; });
+
+    dragged.style.transform = "translateX(" + dx + "px)";
+    chips.forEach((chip, i) => {
+      if (i === from) return;
+      let slide = 0;
+      if (from < to && i > from && i <= to) slide = -shift;
+      if (from > to && i >= to && i < from) slide = shift;
+      chip.style.transform = slide ? "translateX(" + slide + "px)" : "";
+    });
+  };
+
+  const onUp = () => {
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+    strip.classList.remove("reordering");
+    dragged.classList.remove("dragging");
+    for (const chip of chips) chip.style.transform = "";
+    if (!moved) return;
+
+    // A drag also ends in a click, and that click is not a selection. It cannot
+    // be handled with a flag on the tab, because refresh() below replaces every
+    // tab before the click arrives - so the click lands on a brand new element
+    // that knows nothing about the drag. Suppressing it at the container in the
+    // capture phase catches it wherever it lands, and the listener removes
+    // itself either way: a flag that outlives its click would silently eat the
+    // next real one.
+    const swallow = (click) => click.stopPropagation();
+    strip.addEventListener("click", swallow, true);
+    setTimeout(() => strip.removeEventListener("click", swallow, true), 250);
+
+    if (app.chain.moveTo(from, to)) {
+      reseed();
+      refresh();
+    }
+  };
+
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
 }
 
 /** Wipe the feedback history and reseed it from the live picture. */
@@ -578,6 +694,15 @@ function wire() {
     editStack(() => app.chain.setEffect(app.library.byName(dom.effect.value)));
   });
 
+  // Everyone tries this and nothing happened. preventDefault so the page does
+  // not scroll out from under the gesture.
+  dom.amount.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    app.chain.setAmount(app.chain.amount + (event.deltaY < 0 ? 0.02 : -0.02));
+    setAmountReadout();
+    saveLook();
+  }, { passive: false });
+
   dom.amount.addEventListener("input", () => {
     app.chain.setAmount(dom.amount.value / 100);
     setAmountReadout();
@@ -599,6 +724,28 @@ function wire() {
   dom.quickSnap.addEventListener("click", takeSnapshot);
 
   dom.full.addEventListener("click", toggleFullscreen);
+  dom.max.addEventListener("click", () => {
+    setMaximised(!document.body.classList.contains("maximised"));
+  });
+
+  // Entering or leaving fullscreen changes whether the bars may fold at all,
+  // so both directions have to put them back and re-arm from scratch.
+  document.addEventListener("fullscreenchange", showChrome);
+
+  // On a desktop the equivalent of tapping the picture is simply moving the
+  // mouse. Throttled, because pointermove fires per pixel and showChrome
+  // resets a timer.
+  if (!TOUCH) {
+    let lastMove = 0;
+    window.addEventListener("pointermove", () => {
+      if (!chromeCanFold()) return;
+      if (chromeHidden()) return showChrome();
+      const now = performance.now();
+      if (now - lastMove < 500) return;
+      lastMove = now;
+      showChrome();
+    });
+  }
   dom.settingsOpen.addEventListener("click", () => openSheet(dom.settings));
   dom.settingsClose.addEventListener("click", () => closeSheet(dom.settings));
   dom.settings.addEventListener("click", (event) => {
@@ -799,6 +946,8 @@ async function boot() {
   app.recorder = new Recorder(dom.canvas, 30);
 
   if (TOUCH) applyTouchLayout();
+  try { setMaximised(localStorage.getItem(WINDOW_KEY) === "max"); }
+  catch { setMaximised(false); }
 
   buildEffectMenu();
   buildResolutionMenu();

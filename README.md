@@ -114,6 +114,11 @@ saves a still.
 
 ## Gotchas
 
+- **Drag a layer tab to reorder the chain** on a desktop — order is most of the
+  expressive range, and it was two steps before. The scroll wheel works over
+  the Amount slider. **Maximise** is the middle caption button; `F` is
+  fullscreen, and in fullscreen the bars fold away when the mouse goes still.
+
 - **`file://` will never work.** See above. This is the single most common way
   to conclude the app is broken when it isn't.
 
