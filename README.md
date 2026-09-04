@@ -105,7 +105,8 @@ carries a look too — this is for the ones worth coming back to.
 
 The red button records the **output** — the last layer's picture, at the
 camera's own resolution, with no chrome over it. The camera button beside it
-saves a still.
+saves a still. The microphone button to its left records sound with the take;
+it is off until you switch it on, and off is silent.
 
 ### Keys
 
@@ -123,6 +124,7 @@ saves a still.
 | `M` | Mirror horizontally |
 | `R` | Start / stop recording the output |
 | `S` | Save a still of the output |
+| `V` | Record sound with the take |
 | `X` | Build a random stack |
 | `F` | Fullscreen |
 | `Esc` | Close the help panel, or leave fullscreen |
@@ -169,9 +171,22 @@ saves a still.
   codec error, which is worse than an honest `.webm`. To convert one:
   `ffmpeg -i in.webm -c copy out.mp4`.
 
-- **Recordings have no audio.** The camera is opened video-only on purpose: a
-  microphone permission prompt for an app that does nothing with sound is a bad
-  trade, and the browser asks for both at once or not at all.
+- **Sound is off until you switch it on**, with the microphone button beside
+  the record button (or `V`). Recordings are silent otherwise. The camera is
+  still opened video-only, because `getUserMedia` asks for the camera and the
+  microphone in one prompt or not at all — so the microphone is a second,
+  later request that happens only when you ask for sound, and nobody who just
+  wants to look at themselves through a shader is ever asked for a mic.
+
+  Switching it on opens the microphone **there and then**, not at the moment
+  you press record, so the permission prompt is never in the middle of the one
+  gesture that has to be instant. The price is that your browser shows its
+  microphone indicator for as long as sound is armed, which is honest — the
+  mic really is open. Switch it off, or close the tab, and it is released.
+
+  Sound cannot be switched during a take: `MediaRecorder` is handed its tracks
+  once, at the start. The app says so rather than setting a flag that quietly
+  applies to some later recording.
 
 - **A recording is held in memory until you stop it.** A page cannot write to
   disk incrementally without asking for a directory first. At 1080p that is

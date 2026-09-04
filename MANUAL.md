@@ -963,6 +963,31 @@ source order. None of it is visible maximised or in fullscreen, and none of it
 may cost the WebGL canvas a frame — which is why it is all gradients rather
 than a second canvas, and why only `transform` animates.
 
+**Sound is a second permission, asked for late.** `getUserMedia` grants the
+camera and the microphone in one prompt or neither, so an app that opens both
+at startup asks everyone for a mic — including the majority who only ever
+wanted to see themselves through a shader. Keeping `Microphone` out of
+`Camera` is what makes the alternative possible: the camera is opened at start
+and its permission is the price of the app working at all, while the mic is a
+separate, later `getUserMedia` call made only when someone switches sound on.
+
+Two consequences worth knowing. The canvas capture stream carries video and
+nothing else, so a take with sound is a third `MediaStream` assembled from the
+canvas's video track and the mic's audio track — and the mic track belongs to
+the `Microphone`, so the recorder must never stop it or the second take would
+be silent. And `isTypeSupported` answers about the codec *pair*, not the video
+codec alone: a browser can support `avc1` and refuse `avc1,mp4a.40.2`, so
+there are two codec lists rather than one list and a suffix. Asking the
+video-only question and then handing the recorder an audio track anyway
+produces a silent track or no file, depending on the browser, and a take you
+cannot repeat is the worst possible place to discover that.
+
+The mic is held open between takes rather than acquired per take. Acquiring it
+when record is pressed would put a permission prompt — and on a cold device a
+tenth of a second of hardware startup — inside the one gesture that has to be
+instant. The cost is a browser microphone indicator for as long as sound is
+armed, which is the honest reading of the situation.
+
 **The layer strip carries names now.** It used to be six numbered squares,
 which meant the only way to find out what was in layer 4 was to hover it. A tab
 strip is the period-correct control for "several things, one of them current",

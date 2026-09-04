@@ -11,9 +11,18 @@
  *
  * Two limitations worth knowing before you record something you can't repeat:
  *
- * - **No audio.** The camera is opened video-only, deliberately: a microphone
- *   permission prompt for an app that does nothing with sound is a bad trade,
- *   and the browser asks for both at once or not at all.
+ * - **Audio is opt-in and asked for separately.** The camera is still opened
+ *   video-only, because getUserMedia asks for the camera and the microphone
+ *   in one prompt or not at all, and a mic prompt in front of someone who
+ *   only wants to see themselves through a shader is a bad trade. The
+ *   microphone is a second, later getUserMedia call made only when the sound
+ *   button is switched on - so nobody is asked for a mic until they have
+ *   said, in as many words, that they want one.
+ *
+ *   The canvas capture stream carries video and nothing else, so a take with
+ *   sound is a third MediaStream built from the canvas's video track and the
+ *   microphone's audio track. The mic track outlives the take: it belongs to
+ *   the Microphone below and is reused, never stopped by the recorder.
  *
  * - **MP4 where the browser can, WebM where it cannot.** MP4/H.264 is what
  *   everything downstream expects - phones, editors, messaging apps, anything
@@ -53,9 +62,28 @@ const CODECS = [
   ["video/webm", "webm"],
 ];
 
-function pickCodec() {
+/*
+ * The same list again, with an audio codec named in each entry.
+ *
+ * It has to be a second list rather than a suffix, because isTypeSupported
+ * answers about the *pair*: a browser may support avc1 and refuse
+ * avc1,mp4a.40.2. Asking the video-only question and then handing the recorder
+ * an audio track anyway produces a silent track, or no file, depending on the
+ * browser - and a take you cannot repeat is the worst place to find that out.
+ * mp4a.40.2 is AAC-LC, which is what anything that plays H.264 expects; Opus
+ * is the only sensible partner for VP8/VP9.
+ */
+const CODECS_WITH_AUDIO = [
+  ["video/mp4;codecs=avc1,mp4a.40.2", "mp4"],
+  ["video/mp4", "mp4"],
+  ["video/webm;codecs=vp9,opus", "webm"],
+  ["video/webm;codecs=vp8,opus", "webm"],
+  ["video/webm", "webm"],
+];
+
+function pickCodec(withAudio = false) {
   if (typeof MediaRecorder === "undefined") return null;
-  for (const [mimeType, extension] of CODECS) {
+  for (const [mimeType, extension] of (withAudio ? CODECS_WITH_AUDIO : CODECS)) {
     if (MediaRecorder.isTypeSupported(mimeType)) return { mimeType, extension };
   }
   return null;
@@ -160,6 +188,94 @@ function bitrateFor(width, height, fps) {
   return Math.round(Math.min(Math.max(bits, 2e6), 40e6));
 }
 
+/**
+ * Turn a microphone getUserMedia rejection into something worth reading.
+ *
+ * Separate from the camera's version in camera.js on purpose: the DOM names
+ * overlap but the fixes do not, and "check that a camera is attached" put in
+ * front of someone whose microphone is muted is worse than no message at all.
+ */
+function describeMic(exc) {
+  const name = exc && exc.name;
+  if (name === "NotAllowedError" || name === "SecurityError") {
+    if (!window.isSecureContext) {
+      return "Microphone access needs a secure page - https:// or localhost.";
+    }
+    return "Microphone permission was refused. Allow it for this site (the "
+      + "icon at the left of the address bar) and switch sound back on.";
+  }
+  if (name === "NotFoundError" || name === "OverconstrainedError") {
+    return "No microphone answered. Check that one is attached, then try again.";
+  }
+  if (name === "NotReadableError") {
+    return "The microphone is attached but could not be opened - usually "
+      + "because another application already has it.";
+  }
+  return "Could not open the microphone: " + (exc && exc.message ? exc.message : exc);
+}
+
+/**
+ * The microphone, held open only while sound is switched on.
+ *
+ * Deliberately not part of Camera. The camera is opened when the app starts
+ * and its permission is the price of the app working at all; the microphone
+ * is opened only when someone asks for sound and released the moment they
+ * stop asking. Keeping the two apart is what makes that possible - one
+ * getUserMedia call for both would mean one prompt for both, for everyone,
+ * forever.
+ *
+ * The track is held between takes rather than acquired per take. Acquiring it
+ * when the record button is pressed would put a permission prompt - and, on a
+ * cold device, a tenth of a second of hardware startup - in the middle of the
+ * one gesture that has to be instant. The cost is that the browser shows its
+ * microphone indicator for as long as sound is armed, which is honest: the
+ * microphone really is open.
+ */
+export class Microphone {
+  constructor() {
+    this.stream = null;
+    this.error = null;
+  }
+
+  get armed() { return this.stream !== null; }
+
+  get track() {
+    return this.stream ? this.stream.getAudioTracks()[0] || null : null;
+  }
+
+  /** True once the mic is live; throws with a readable message if it is not. */
+  async arm() {
+    if (this.armed) return true;
+    this.error = null;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      this.error = "This browser has no microphone API.";
+      throw new Error(this.error);
+    }
+    try {
+      // The processing browsers apply by default suits a person talking,
+      // which is what a camera app records. It is the wrong choice for music,
+      // and that is a trade being made here rather than an oversight.
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+    } catch (exc) {
+      this.error = describeMic(exc);
+      throw new Error(this.error);
+    }
+    return true;
+  }
+
+  disarm() {
+    if (!this.stream) return;
+    for (const track of this.stream.getTracks()) track.stop();
+    this.stream = null;
+  }
+}
+
 export class Recorder {
   constructor(canvas, fps = 30) {
     this.canvas = canvas;
@@ -168,6 +284,7 @@ export class Recorder {
     this.chunks = [];
     this.startedAt = 0;
     this.extension = "webm";
+    this.hasAudio = false;
   }
 
   static get available() { return pickCodec() !== null; }
@@ -181,20 +298,39 @@ export class Recorder {
     return this.recording ? (performance.now() - this.startedAt) / 1000 : 0;
   }
 
-  start(bitsPerSecond = null) {
+  /**
+   * Begin a take.
+   *
+   * `audioTrack` is optional and belongs to the caller - it is added to the
+   * recorded stream and deliberately never stopped here, so one live
+   * microphone survives take after take.
+   */
+  start({ audioTrack = null, bitsPerSecond = null } = {}) {
     if (this.recording) return false;
-    const codec = pickCodec();
+    // A track that has already ended - mic unplugged, or seized by another
+    // app - would be muxed as silence and quietly turn a take with sound into
+    // a take without one. Better to record video alone and pick the codec
+    // that says so.
+    const audio = audioTrack && audioTrack.readyState === "live" ? audioTrack : null;
+    const codec = pickCodec(!!audio);
     if (!codec) throw new Error("This browser cannot record video from a canvas.");
 
     // captureStream(fps) asks the canvas to publish a frame at most that often;
     // the render loop is free-running at the display's rate above it.
-    const stream = this.canvas.captureStream(this.fps);
+    const canvasStream = this.canvas.captureStream(this.fps);
+    const stream = audio
+      ? new MediaStream([...canvasStream.getVideoTracks(), audio])
+      : canvasStream;
     this.chunks = [];
     this.extension = codec.extension;
+    this.hasAudio = !!audio;
     this.recorder = new MediaRecorder(stream, {
       mimeType: codec.mimeType,
       videoBitsPerSecond: bitsPerSecond
         || bitrateFor(this.canvas.width, this.canvas.height, this.fps),
+      // Speech through a laptop or phone mic: well past transparent for that,
+      // and negligible beside the video bitrate either way.
+      ...(audio ? { audioBitsPerSecond: 128000 } : {}),
     });
     this.recorder.ondataavailable = (event) => {
       if (event.data && event.data.size) this.chunks.push(event.data);

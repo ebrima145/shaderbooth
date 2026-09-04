@@ -22,7 +22,7 @@ import { EffectLibrary, HEAVY, loadShaderSources } from "./effects.js";
 import { EffectChain, MAX_LAYERS } from "./chain.js";
 import { Renderer } from "./renderer.js";
 import { Camera, RESOLUTIONS } from "./camera.js";
-import { Recorder } from "./recorder.js";
+import { Recorder, Microphone } from "./recorder.js";
 
 const el = (id) => document.getElementById(id);
 
@@ -46,6 +46,7 @@ const dom = {
   prev: el("btn-prev"),
   next: el("btn-next"),
   mirror: el("btn-mirror"),
+  mic: el("btn-mic"),
   rec: el("btn-rec"),
   snap: el("btn-snap"),
   quickRec: el("btn-quick-rec"),
@@ -104,6 +105,7 @@ const app = {
   renderer: null,
   camera: new Camera(dom.video),
   recorder: null,
+  mic: new Microphone(),
   startedAt: performance.now(),
   frames: 0,
   fpsAt: performance.now(),
@@ -448,6 +450,8 @@ function refresh() {
   dom.up.disabled = chain.active === chain.length - 1;
 
   dom.mirror.classList.toggle("on", app.renderer.mirror);
+  dom.mic.classList.toggle("on", app.mic.armed);
+  dom.mic.setAttribute("aria-pressed", app.mic.armed ? "true" : "false");
   dom.play.classList.toggle("playing", app.camera.live);
   const recording = !!(app.recorder && app.recorder.recording);
   dom.rec.classList.toggle("on", recording);
@@ -988,6 +992,7 @@ function wire() {
     if (event.target === dom.looks) closeSheet(dom.looks);
   });
 
+  dom.mic.addEventListener("click", toggleMic);
   dom.rec.addEventListener("click", toggleRecording);
   dom.snap.addEventListener("click", takeSnapshot);
 
@@ -1096,7 +1101,42 @@ function wire() {
     dom.controlbar.style.removeProperty("--pin");
     showChrome();
   });
-  window.addEventListener("beforeunload", () => app.camera.stop());
+  window.addEventListener("beforeunload", () => {
+    app.camera.stop();
+    app.mic.disarm();
+  });
+}
+
+/**
+ * Switch sound on or off for the next take.
+ *
+ * Arming opens the microphone there and then, which is the whole reason this
+ * is a switch and not a checkbox read at record time: the permission prompt,
+ * and any refusal, happens now rather than in the middle of pressing record.
+ *
+ * Refused permission puts the switch straight back off. Leaving it lit
+ * would promise sound on the next take that nothing could deliver, and the
+ * take is the thing you cannot repeat.
+ */
+async function toggleMic() {
+  // MediaRecorder is handed its tracks once, at start(). Changing the answer
+  // half way through a take is not something it can act on, so say so rather
+  // than silently setting a flag that applies to some later recording.
+  if (app.recorder && app.recorder.recording) {
+    return toast("stop the recording first", 2);
+  }
+  if (app.mic.armed) {
+    app.mic.disarm();
+    flash("Sound off");
+    return refresh();
+  }
+  try {
+    await app.mic.arm();
+    flash("Sound on");
+  } catch (exc) {
+    message("No microphone", String(exc.message || exc), "error");
+  }
+  refresh();
 }
 
 async function toggleRecording() {
@@ -1106,7 +1146,7 @@ async function toggleRecording() {
   } else {
     if (!app.renderer.hasOutput) return toast("nothing to record", 2);
     try {
-      app.recorder.start();
+      app.recorder.start({ audioTrack: app.mic.track });
     } catch (exc) {
       return message("Cannot record", String(exc.message || exc), "error");
     }
@@ -1189,6 +1229,8 @@ function onKey(event) {
     toggleRecording();
   } else if (key === "s" || key === "S") {
     takeSnapshot();
+  } else if (key === "v" || key === "V") {
+    toggleMic();
   } else if (key === "x" || key === "X") {
     surprise();
   } else if (key === "f" || key === "F") {
