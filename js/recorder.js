@@ -285,6 +285,8 @@ export class Recorder {
     this.startedAt = 0;
     this.extension = "webm";
     this.hasAudio = false;
+    // Held for as long as a take runs. See the note in start().
+    this.stream = null;
   }
 
   static get available() { return pickCodec() !== null; }
@@ -317,10 +319,23 @@ export class Recorder {
 
     // captureStream(fps) asks the canvas to publish a frame at most that often;
     // the render loop is free-running at the display's rate above it.
-    const canvasStream = this.canvas.captureStream(this.fps);
-    const stream = audio
-      ? new MediaStream([...canvasStream.getVideoTracks(), audio])
-      : canvasStream;
+    //
+    // The audio track is *added to this stream* rather than combined with the
+    // canvas's video track into a new MediaStream, and that is load-bearing.
+    // Building a new stream and handing it to MediaRecorder leaves nothing
+    // holding the CanvasCaptureMediaStream itself - only its track has been
+    // carried across. A few seconds later the collector takes it, the canvas
+    // stops publishing frames, and the take freezes on whatever happened to
+    // be on screen while the audio, owned by the Microphone and so still
+    // referenced, carries on to the end. The result is a video that stops and
+    // a soundtrack that does not.
+    //
+    // Keeping the capture stream as the recorded stream restores the lifetime
+    // that video-only takes always had - MediaRecorder holds its own stream -
+    // and this.stream is a second reference held for the same reason.
+    const stream = this.canvas.captureStream(this.fps);
+    if (audio) stream.addTrack(audio);
+    this.stream = stream;
     this.chunks = [];
     this.extension = codec.extension;
     this.hasAudio = !!audio;
@@ -355,10 +370,22 @@ export class Recorder {
         const blob = new Blob(this.chunks, { type });
         this.chunks = [];
         this.recorder = null;
+        this.releaseStream();
         resolve(await save(blob, downloadName(this.extension), type));
       };
       this.recorder.stop();
     });
+  }
+
+  /**
+   * Let go of the take's stream, stopping the canvas capture but never the
+   * microphone - that one belongs to the Microphone and has to survive for
+   * the next take.
+   */
+  releaseStream() {
+    if (!this.stream) return;
+    for (const track of this.stream.getVideoTracks()) track.stop();
+    this.stream = null;
   }
 
   toggle() {
