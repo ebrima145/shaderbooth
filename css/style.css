@@ -88,49 +88,182 @@ body {
       #1b4ea8 0%, #2f6ec6 26%, #3f86dd 46%, #79b6ec 66%, #b3dbf5 84%, #dcefff 100%);
 }
 
-/* The sky, and the hill it sits on. Both are fixed pseudo-elements so they
-   cost no layout and cannot be scrolled off; the clouds drift on a very long
-   cycle, slow enough to read as weather rather than as animation. */
+/*
+ * The desktop behind the window: sky, two decks of cloud, horizon haze, hills.
+ *
+ * Four fixed pseudo-elements, so none of it costs layout or can be scrolled
+ * off, and all of it is pure gradient - nothing here may cost the WebGL canvas
+ * a frame, which rules out a second canvas or an SVG filter. Only `transform`
+ * animates, which stays on the compositor.
+ *
+ * Two of the four hang off <html> because <body> only has two pseudo-elements
+ * and this needs four. That puts html::after *after* <body> in tree order, so
+ * every layer states an explicit z-index rather than trusting the source
+ * order, and #app sits above the lot.
+ *
+ *   sky      body background, propagated to the canvas
+ *   1 cirrus html::before   thin, high, drifts fast
+ *   2 cumulus body::before  fat, low, drifts slowly - the parallax pair
+ *   3 haze    html::after   the pale band distance puts at every horizon
+ *   4 hills   body::after   three ridges
+ *   5 #app
+ *
+ * None of it is visible maximised or in fullscreen, which is the honest reason
+ * it stops here rather than going further.
+ */
+html::before,
+html::after,
 body::before,
 body::after {
   content: "";
   position: fixed;
   pointer-events: none;
-  z-index: 0;
+}
+
+/*
+ * Cloud decks.
+ *
+ * Cumulus have a flat base and a lumpy top, and a single radial gradient is
+ * symmetric - which is why the four blurred circles this replaces read as
+ * smudges rather than as weather. Each cloud here is a wide, shallow ellipse
+ * for the base with two rounder puffs sitting on it, and the blur welds the
+ * three into one silhouette that is flat underneath.
+ *
+ * The cirrus deck is the same trick with the ellipses flattened much further
+ * and the opacity halved, and it drifts at nearly twice the speed. Two speeds
+ * is the whole of the depth cue; without it more cloud just means more smudge.
+ */
+html::before {
+  left: -25%;
+  top: -6%;
+  width: 150%;
+  height: 52%;
+  filter: blur(9px);
+  animation: drift-high 95s ease-in-out infinite alternate;
+  background:
+    radial-gradient(closest-side, rgba(255,255,255,.30), transparent) 12% 30% / 30% 5% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.22), transparent) 31% 21% / 22% 4% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.26), transparent) 58% 40% / 26% 4.5% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.20), transparent) 79% 27% / 20% 4% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.24), transparent) 92% 47% / 24% 4% no-repeat;
 }
 
 body::before {
-  left: -20%;
-  top: -12%;
-  width: 140%;
-  height: 78%;
+  left: -18%;
+  top: -10%;
+  width: 136%;
+  height: 74%;
+  filter: blur(11px);
+  animation: drift-low 190s ease-in-out infinite alternate;
   background:
-    radial-gradient(closest-side, rgba(255, 255, 255, 0.55), transparent) 8% 34% / 30% 32% no-repeat,
-    radial-gradient(closest-side, rgba(255, 255, 255, 0.40), transparent) 38% 14% / 24% 26% no-repeat,
-    radial-gradient(closest-side, rgba(255, 255, 255, 0.45), transparent) 68% 48% / 28% 28% no-repeat,
-    radial-gradient(closest-side, rgba(255, 255, 255, 0.32), transparent) 88% 20% / 20% 22% no-repeat;
-  filter: blur(12px);
-  animation: drift 150s ease-in-out infinite alternate;
+    /* far left, small */
+    radial-gradient(closest-side, rgba(255,255,255,.56), transparent) 7% 45% / 17% 5% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.52), transparent) 5% 42% / 8% 7% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.48), transparent) 10% 43% / 6.5% 6% no-repeat,
+    /* the big one, left of centre */
+    radial-gradient(closest-side, rgba(255,255,255,.72), transparent) 27% 35% / 26% 6% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.68), transparent) 23% 29% / 13% 11% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.60), transparent) 32% 31% / 10% 8% no-repeat,
+    /* centre right, sitting lower */
+    radial-gradient(closest-side, rgba(255,255,255,.60), transparent) 62% 57% / 24% 6% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.56), transparent) 58% 52% / 12% 10% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.50), transparent) 67% 54% / 9% 7% no-repeat,
+    /* the right-hand pair */
+    radial-gradient(closest-side, rgba(255,255,255,.54), transparent) 86% 39% / 20% 5% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.50), transparent) 83% 34% / 10% 8% no-repeat,
+    radial-gradient(closest-side, rgba(255,255,255,.42), transparent) 90% 35% / 7% 6% no-repeat;
 }
 
+/*
+ * Horizon haze.
+ *
+ * The cheapest line in this file and close to the most valuable: distance
+ * scatters light, so the bottom of a real sky goes pale where it meets the
+ * land. Without it the sky and the hill look stuck together rather than
+ * continuous, however good the hill is. It paints under the ridges, so only
+ * the part above the crest is ever seen.
+ *
+ * It runs all the way to the floor and holds its final value there, which
+ * looks like waste and is the point. Ending it just above the skyline meant
+ * the gradient reached full strength and was then cut off by the element's
+ * own edge - a bright stripe laid along the top of the hills, brighter than
+ * the sky above it and the land below. The ridges cover the surplus.
+ */
+html::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 50%;
+  z-index: 3;
+  background: linear-gradient(180deg,
+      rgba(255,253,247,0) 0%,
+      rgba(255,253,247,.14) 38%,
+      rgba(255,251,242,.34) 62%,
+      rgba(255,250,238,.44) 78%,
+      rgba(255,250,238,.44) 100%);
+}
+
+/*
+ * The hills.
+ *
+ * This was one ellipse 125% wide, and at that width its curve falls off both
+ * sides of the screen - what is left across the middle is a straight line, so
+ * it read as a green band rather than as a ridge. Three narrower ellipses at
+ * different heights and offsets give a skyline instead.
+ *
+ * The far ridge is paler, bluer and less saturated than the near one. That is
+ * aerial perspective, and it is doing more work here than the shapes are: it
+ * is what puts distance between the three rather than just stacking them.
+ * First layer paints on top, so they are listed near to far.
+ *
+ * Each ridge holds its colour to ~79% of its ellipse and then goes transparent
+ * inside a point and a half, rather than fading out over a twelfth of its
+ * height. A wide fade sounds softer and is actually a bug: two ridges whose
+ * translucent upper edges overlap blend sky through the seam, which put a
+ * notch of blue *below* the skyline where the far and mid ridges met. A hill
+ * seen against the sky has a hard edge; the narrow ramp is only there to keep
+ * the curve from stairstepping.
+ *
+ * The far one is 124% wide for the same reason: an ellipse narrower than the
+ * screen has to end somewhere, and where it ended the sky came through beside
+ * it. Widening it removes that seam instead of moving it, and a distant range
+ * is what belongs behind two nearer hills anyway.
+ */
 body::after {
-  left: -6%;
+  left: -8%;
   bottom: -10%;
-  width: 112%;
-  height: 46%;
-  background: radial-gradient(125% 100% at 50% 100%,
-      #86c24b 0%, #6ba43a 22%, #4f8c2a 46%, #3f7a22 62%, transparent 74%);
+  width: 116%;
+  height: 48%;
+  z-index: 4;
+  background:
+    /* near: broad, low, the saturated one */
+    radial-gradient(128% 62% at 46% 100%,
+        #7fbc46 0%, #66a537 36%, #4c8a28 64%, #3d7820 79%, rgba(61,120,32,0) 80.5%),
+    /* mid */
+    radial-gradient(70% 84% at 72% 100%,
+        #79ac52 0%, #5f9440 48%, #4b7f33 78%, rgba(75,127,51,0) 79.5%),
+    /* far: a range rather than a hill, so it backs the whole width */
+    radial-gradient(124% 94% at 32% 100%,
+        #9dbb8a 0%, #86a875 44%, #789c6d 78%, rgba(120,156,109,0) 79.5%);
 }
 
-@keyframes drift {
-  to { transform: translate3d(-7%, 2.5%, 0) scale(1.07); }
+html::before { z-index: 1; }
+body::before { z-index: 2; }
+
+/* Different distances, different speeds - that is the only reason there are
+   two decks. Both are long enough to read as weather rather than animation. */
+@keyframes drift-high {
+  to { transform: translate3d(-9%, 1.5%, 0) scale(1.05); }
+}
+@keyframes drift-low {
+  to { transform: translate3d(-4%, 2%, 0) scale(1.06); }
 }
 
 /* --- the window ---------------------------------------------------------- */
 
 #app {
   position: relative;
-  z-index: 1;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   width: min(1100px, 100%);

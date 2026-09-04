@@ -914,11 +914,54 @@ muted, cooled, or "modernised" — those are the Luna stop lists exactly.
 
 **What was added instead is the movement a screenshot of XP could never show
 you.** Everything that answers a pointer eases rather than snaps, on one shared
-curve so nothing is out of step; the sky drifts on a two-and-a-half minute
-cycle, slow enough to read as weather; the window arrives rather than
+curve so nothing is out of step; two decks of cloud drift at different speeds
+on cycles of a minute and a half and three minutes, slow enough to read as
+weather; the window arrives rather than
 appearing; the lens in the title bar opens while a picture is live; and the
 trackbar fills with the XP progress green. All of it is period-plausible — XP
 animated its own chrome — and all of it is behind `prefers-reduced-motion`.
+
+**The desktop behind the window is four gradient layers, and three of its
+problems were worth writing down.** It began as a sky, four blurred circles and
+one ellipse for the hill, and each of those was wrong in an instructive way.
+
+*The hill was a straight line.* One ellipse 125% wide has its curve off both
+sides of the screen; what is left across the middle is flat, so it read as a
+green band rather than as a ridge. Three narrower ellipses at different heights
+and offsets give a skyline. The far one is paler, bluer and less saturated —
+aerial perspective is doing more work here than the shapes are, because it is
+what puts distance between the three rather than merely stacking them.
+
+*Soft edges leaked sky.* Each ridge originally faded to transparent over a
+twelfth of its height, which sounds softer and is a bug: where two translucent
+upper edges overlapped they blended sky through the seam, putting a notch of
+blue **below** the skyline. A hill seen against the sky has a hard edge. They
+now hold colour to ~79% of the ellipse and go transparent inside a point and a
+half — just enough ramp to stop the curve stairstepping. The far ridge was also
+widened past the screen, because an ellipse narrower than the viewport has to
+end somewhere and the sky came through where it ended; widening removes the
+seam rather than moving it.
+
+*The haze had a hard bottom.* The pale band where sky meets land is the
+cheapest line in the file and close to the most valuable — without it the two
+halves look stuck together however good the hill is. But the element ended just
+above the skyline, so the gradient reached full strength and was then cut off
+by its own edge: a bright stripe laid along the top of the hills, brighter than
+the sky above and the land below. It now runs to the floor and holds its final
+value, and the ridges cover the surplus.
+
+Clouds are three radial gradients each — a wide shallow ellipse for the base
+with two rounder puffs on top — because cumulus have a flat base and a lumpy
+top, and one radial gradient is symmetric, which is why four blurred circles
+read as smudges. Two decks at different drift speeds is the whole of the depth
+cue; without it, more cloud is just more smudge.
+
+Two of the four layers hang off `<html>`, because `<body>` has only two
+pseudo-elements and this needs four. That puts `html::after` after `<body>` in
+tree order, so every layer states an explicit `z-index` rather than trusting
+source order. None of it is visible maximised or in fullscreen, and none of it
+may cost the WebGL canvas a frame — which is why it is all gradients rather
+than a second canvas, and why only `transform` animates.
 
 **The layer strip carries names now.** It used to be six numbered squares,
 which meant the only way to find out what was in layer 4 was to hover it. A tab
